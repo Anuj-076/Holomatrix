@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Holomatrix</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/jpeg" href="/logo.jpg">
+  <link rel="apple-touch-icon" href="/logo.jpg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <script src="/js/boot.js"></script>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/landing.css">
+  <link rel="stylesheet" href="/css/auth.css">
+</head>
+<body>
+<div class="auth">
+
+  <!-- Visual side -->
+  <aside class="auth-art" aria-hidden="true">
+    <div class="orb o1"></div><div class="orb o2"></div>
+    <a href="/" class="brand brand-corner">
+      <span class="img-slot logo-slot" data-img="brand.logo"><img src="/logo.jpg" alt=""></span>
+    </a>
+    <div class="art-inner">
+      <div class="holo">
+        <div class="ring"></div><div class="ring r2"></div><div class="ring r3"></div>
+        <div class="holo-core img-slot" data-img="brand.logo"><img src="/logo.jpg" alt=""></div>
+      </div>
+      <div class="art-name" data-t="brand.name">Holomatrix</div>
+    </div>
+  </aside>
+
+  <!-- Form side -->
+  <main class="auth-main">
+    <div class="auth-top">
+      <a href="/" class="back">← <span data-t="auth.back">Back to home</span></a>
+      <button class="btn btn-ghost btn-icon" data-theme-toggle aria-label="Toggle theme">🌙</button>
+    </div>
+
+    <div class="auth-center">
+      <div class="auth-card">
+
+        <div class="tabs" id="tabs" role="tablist">
+          <button type="button" role="tab" data-mode="login"><span data-t="auth.tab.login">Log in</span></button>
+          <button type="button" role="tab" data-mode="signup"><span data-t="auth.tab.signup">Sign up</span></button>
+        </div>
+
+        <!-- LOGIN -->
+        <section class="pane" data-pane="login">
+          <h1 data-t="auth.login.title">Welcome back</h1>
+          <p class="sub" data-t="auth.login.sub">Log in to your account.</p>
+
+          <div class="social">
+            <button type="button" data-oauth="google">
+              <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.5 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+              Google
+            </button>
+            <button type="button" data-oauth="linkedin_oidc">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="4" fill="#0A66C2"/><path fill="#fff" d="M7.1 9.6H4.4V19h2.7V9.6zM5.7 5.2a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM19.6 13.6c0-2.5-1.3-4.2-3.6-4.2-1.2 0-2 .6-2.4 1.2V9.6h-2.6V19h2.7v-5.1c0-1.3.6-2.1 1.7-2.1 1 0 1.5.7 1.5 2.1V19h2.7v-5.4z"/></svg>
+              LinkedIn
+            </button>
+          </div>
+          <div class="divider">or with email</div>
+
+          <form id="f-login" novalidate>
+            <div class="field"><label for="l-email">Email</label>
+              <input class="input" id="l-email" type="email" autocomplete="email" placeholder="you@example.com" required></div>
+            <div class="field"><label for="l-pass">Password</label>
+              <div class="pw"><input class="input" id="l-pass" type="password" autocomplete="current-password" placeholder="Your password" required>
+                <button type="button" class="eye" data-eye="l-pass">Show</button></div></div>
+            <div class="row-between"><span></span><a href="#" class="linkish" data-go="forgot">Forgot password?</a></div>
+            <button class="btn btn-primary btn-block" type="submit"><span data-t="auth.login.button">Log in</span></button>
+          </form>
+          <p class="small">By continuing you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.</p>
+        </section>
+
+        <!-- SIGNUP -->
+        <section class="pane" data-pane="signup" hidden>
+          <h1 data-t="auth.signup.title">Create your account</h1>
+          <p class="sub" data-t="auth.signup.sub">It only takes a minute.</p>
+
+          <div class="social">
+            <button type="button" data-oauth="google">
+              <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.5 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+              Google
+            </button>
+            <button type="button" data-oauth="linkedin_oidc">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="4" fill="#0A66C2"/><path fill="#fff" d="M7.1 9.6H4.4V19h2.7V9.6zM5.7 5.2a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM19.6 13.6c0-2.5-1.3-4.2-3.6-4.2-1.2 0-2 .6-2.4 1.2V9.6h-2.6V19h2.7v-5.1c0-1.3.6-2.1 1.7-2.1 1 0 1.5.7 1.5 2.1V19h2.7v-5.4z"/></svg>
+              LinkedIn
+            </button>
+          </div>
+          <div class="divider">or with email</div>
+
+          <form id="f-signup" novalidate>
+            <input class="hp" id="s-hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <div class="field"><label for="s-name">Full name</label>
+              <input class="input" id="s-name" type="text" autocomplete="name" placeholder="Your name" required></div>
+            <div class="field"><label for="s-email">Email</label>
+              <input class="input" id="s-email" type="email" autocomplete="email" placeholder="you@example.com" required></div>
+            <div class="field"><label for="s-pass">Password</label>
+              <div class="pw"><input class="input" id="s-pass" type="password" autocomplete="new-password" placeholder="8+ characters, letters and numbers" required>
+                <button type="button" class="eye" data-eye="s-pass">Show</button></div></div>
+            <div class="meter" id="meter-s" data-score="0"><i></i><i></i><i></i><i></i></div>
+            <div class="field"><label for="s-pass2">Confirm password</label>
+              <div class="pw"><input class="input" id="s-pass2" type="password" autocomplete="new-password" placeholder="Repeat password" required>
+                <button type="button" class="eye" data-eye="s-pass2">Show</button></div></div>
+            <label class="check"><input type="checkbox" id="s-terms"><span>I agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
+            <button class="btn btn-primary btn-block" type="submit"><span data-t="auth.signup.button">Create account</span></button>
+          </form>
+        </section>
+
+        <!-- FORGOT -->
+        <section class="pane" data-pane="forgot" hidden>
+          <h1 data-t="auth.forgot.title">Reset your password</h1>
+          <p class="sub" data-t="auth.forgot.sub">Enter your email and we'll send you a reset link.</p>
+          <form id="f-forgot" novalidate>
+            <div class="field"><label for="fg-email">Email</label>
+              <input class="input" id="fg-email" type="email" autocomplete="email" placeholder="you@example.com" required></div>
+            <button class="btn btn-primary btn-block" type="submit">Send reset link</button>
+          </form>
+          <p class="small"><a href="#" data-go="login">← Back to log in</a></p>
+        </section>
+
+        <!-- RESET -->
+        <section class="pane" data-pane="reset" hidden>
+          <h1 data-t="auth.reset.title">Set a new password</h1>
+          <p class="sub" data-t="auth.reset.sub">Choose a strong password you haven't used before.</p>
+          <form id="f-reset" novalidate>
+            <div class="field"><label for="r-pass">New password</label>
+              <div class="pw"><input class="input" id="r-pass" type="password" autocomplete="new-password" placeholder="8+ characters, letters and numbers" required>
+                <button type="button" class="eye" data-eye="r-pass">Show</button></div></div>
+            <div class="meter" id="meter-r" data-score="0"><i></i><i></i><i></i><i></i></div>
+            <div class="field"><label for="r-pass2">Confirm new password</label>
+              <div class="pw"><input class="input" id="r-pass2" type="password" autocomplete="new-password" placeholder="Repeat password" required>
+                <button type="button" class="eye" data-eye="r-pass2">Show</button></div></div>
+            <button class="btn btn-primary btn-block" type="submit">Update password</button>
+          </form>
+        </section>
+
+        <!-- SENT -->
+        <section class="pane" data-pane="sent" hidden style="text-align:center">
+          <div class="sent-ico">📬</div>
+          <h1 data-t="auth.sent.title">Check your email</h1>
+          <p class="sub" id="sent-text"></p>
+          <button class="btn btn-ghost btn-block" id="resend-btn" type="button" disabled>Resend email</button>
+          <p class="small"><a href="#" data-go="login">← Back to log in</a></p>
+        </section>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/site.js"></script>
+  <script src="/js/auth.js"></script>
+</body>
+</html>
