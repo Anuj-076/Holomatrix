@@ -1,213 +1,194 @@
-/* Landing page: loads editable content from Supabase (falls back to defaults) */
+/* Landing page behaviour: menu, account, particle hero, scroll effects, team */
 (function () {
-  const esc = UI.esc;
-  const safeUrl = u => {
-    u = String(u || '').trim();
-    return /^(\/|#|https?:\/\/|mailto:|tel:)/i.test(u) ? u : '#';
-  };
-
-  /* ---------- Default content (admin dashboard overrides these via the site_content table) ---------- */
-  const DEFAULTS = {
-    hero: {
-      eyebrow: 'Holomatrix Consulting',
-      title: 'Strategy, technology and growth,',
-      highlight: 'built for what’s next.',
-      subtitle: 'We help ambitious businesses and individuals turn big ideas into measurable results with clear thinking, smart tools and hands-on support.',
-      primaryText: 'Get started', primaryLink: '/login',
-      secondaryText: 'Explore services', secondaryLink: '#services'
-    },
-    stats: [
-      { value: '50+', label: 'Projects delivered' },
-      { value: '30+', label: 'Happy clients' },
-      { value: '5+', label: 'Industries served' },
-      { value: '24/7', label: 'Online support' }
-    ],
-    services: {
-      kicker: 'What we do',
-      title: 'Services designed around your goals',
-      subtitle: 'Pick one service or combine them. Everything is tailored to where you are and where you want to go.',
-      items: [
-        { icon: '🧭', title: 'Strategy & Advisory', text: 'Clear roadmaps, market insight and decision support to move with confidence.' },
-        { icon: '💻', title: 'Digital Solutions', text: 'Websites, tools and automations that save time and help you scale.' },
-        { icon: '📈', title: 'Growth & Marketing', text: 'Brand, content and campaigns that attract the right audience.' },
-        { icon: '🎓', title: 'Training & Mentorship', text: 'Practical guidance and workshops to build skills that last.' },
-        { icon: '🤝', title: 'Partnerships', text: 'Connections and collaborations that open new opportunities.' },
-        { icon: '🛠️', title: 'Custom Projects', text: 'Have something unique in mind? We’ll design it with you.' }
-      ]
-    },
-    about: {
-      kicker: 'About us',
-      title: 'Who we are',
-      text: 'Holomatrix is a consulting team focused on turning complexity into clarity.\nWe combine modern technology with practical experience to help our clients grow.',
-      points: [
-        'Honest, transparent communication',
-        'Modern tools and fast delivery',
-        'Support that continues after launch'
-      ]
-    },
-    faq: [
-      { q: 'How do I get started?', a: 'Create a free account, then use the chat button in the corner to tell us what you need.' },
-      { q: 'How quickly will I get a reply?', a: 'Our team usually responds within a few hours during working days.' },
-      { q: 'Can I customise a service for my needs?', a: 'Yes. Every project is tailored. Reach out and we will shape it with you.' }
-    ],
-    contact: {
-      title: 'Ready to build something remarkable?',
-      text: 'Create your account or talk to us right now. We’d love to hear about your idea.',
-      email: '', phone: '', address: ''
-    }
-  };
-
-  const C = JSON.parse(JSON.stringify(DEFAULTS));
+  'use strict';
   const $ = id => document.getElementById(id);
-  let observer;
+  const esc = UI.esc;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  let scrubWords = [];
 
-  /* ---------- Renderers ---------- */
-  function renderHero() {
-    const h = C.hero || DEFAULTS.hero;
-    $('hero-eyebrow').textContent = h.eyebrow;
-    $('hero-title').innerHTML = esc(h.title) + ' <span class="gradient-text">' + esc(h.highlight) + '</span>';
-    $('hero-sub').textContent = h.subtitle;
-    const a = $('hero-cta1'), b = $('hero-cta2');
-    a.textContent = h.primaryText; a.href = safeUrl(h.primaryLink);
-    b.textContent = h.secondaryText; b.href = safeUrl(h.secondaryLink);
+  /* ---------- Full-screen menu ---------- */
+  function initMenu() {
+    const btn = $('menu-btn'), menu = $('menu');
+    const set = open => {
+      menu.classList.toggle('open', open);
+      btn.classList.toggle('open', open);
+      btn.setAttribute('aria-expanded', open);
+      menu.setAttribute('aria-hidden', !open);
+      document.body.classList.toggle('no-scroll', open);
+    };
+    btn.addEventListener('click', () => set(!menu.classList.contains('open')));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') set(false); });
+    menu.addEventListener('click', e => { if (e.target.closest('a, button')) set(false); });
   }
 
-  function renderStats() {
-    const list = Array.isArray(C.stats) ? C.stats : DEFAULTS.stats;
-    $('stats-grid').innerHTML = list.map((s, i) =>
-      '<div class="card stat reveal" style="--d:' + i * 80 + 'ms"><b class="gradient-text" data-count="' + esc(s.value) + '">' + esc(s.value) + '</b><span>' + esc(s.label) + '</span></div>'
-    ).join('');
-  }
+  /* ---------- Account state ---------- */
+  async function initAccount() {
+    const acc = $('account'), btn = $('account-btn');
+    btn.addEventListener('click', e => { e.stopPropagation(); acc.classList.toggle('open'); });
+    document.addEventListener('click', e => { if (!acc.contains(e.target)) acc.classList.remove('open'); });
+    document.querySelectorAll('[data-logout]').forEach(b => b.addEventListener('click', () => Auth.signOut()));
 
-  function renderServices() {
-    const s = C.services || DEFAULTS.services;
-    const items = Array.isArray(s.items) ? s.items : DEFAULTS.services.items;
-    $('services-kicker').textContent = s.kicker;
-    $('services-title').textContent = s.title;
-    $('services-sub').textContent = s.subtitle;
-    $('services-grid').innerHTML = items.map((it, i) =>
-      '<article class="card card-glow service reveal" style="--d:' + (i % 3) * 90 + 'ms">' +
-      '<div class="ico">' + esc(it.icon) + '</div><h3>' + esc(it.title) + '</h3><p>' + esc(it.text) + '</p></article>'
-    ).join('');
-  }
+    const a = await Site.accessReady;
+    if (!a) return;
+    document.querySelectorAll('[data-guest]').forEach(el => { el.hidden = true; });
+    document.querySelectorAll('[data-user]').forEach(el => { el.hidden = false; });
+    document.querySelectorAll('[data-staff]').forEach(el => { el.hidden = !a.isStaff; });
 
-  function renderAbout() {
-    const a = C.about || DEFAULTS.about;
-    $('about-kicker').textContent = a.kicker;
-    $('about-title').textContent = a.title;
-    $('about-text').textContent = a.text;
-    const pts = Array.isArray(a.points) ? a.points : [];
-    $('about-points').innerHTML = pts.map((p, i) =>
-      '<div class="card point reveal" style="--d:' + i * 90 + 'ms"><i>✓</i><span>' + esc(p) + '</span></div>'
-    ).join('');
-  }
-
-  function renderFaq() {
-    const list = Array.isArray(C.faq) ? C.faq : DEFAULTS.faq;
-    $('faq-list').innerHTML = list.map((f, i) =>
-      '<details class="faq-item reveal" style="--d:' + i * 70 + 'ms"><summary>' + esc(f.q) + '</summary><div class="faq-a">' + esc(f.a) + '</div></details>'
-    ).join('');
-  }
-
-  function renderContact() {
-    const c = C.contact || DEFAULTS.contact;
-    $('contact-title').textContent = c.title;
-    $('contact-text').textContent = c.text;
-    const lines = [];
-    if (c.email) lines.push('<a href="mailto:' + esc(c.email) + '">✉️ ' + esc(c.email) + '</a>');
-    if (c.phone) lines.push('<a href="tel:' + esc(c.phone) + '">📞 ' + esc(c.phone) + '</a>');
-    if (c.address) lines.push('<span>📍 ' + esc(c.address) + '</span>');
-    $('contact-lines').innerHTML = lines.join('');
-  }
-
-  /* ---------- Animations ---------- */
-  function animateCount(el) {
-    const raw = el.dataset.count || '';
-    const m = raw.match(/^(\d+(?:\.\d+)?)(.*)$/);
-    if (!m || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const end = parseFloat(m[1]), suffix = m[2], dec = (m[1].split('.')[1] || '').length;
-    const start = performance.now(), dur = 1400;
-    (function tick(now) {
-      const p = Math.min((now - start) / dur, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
-      el.textContent = (end * eased).toFixed(dec) + suffix;
-      if (p < 1) requestAnimationFrame(tick);
-    })(start);
-  }
-
-  function observeReveals() {
-    if (!observer) {
-      observer = new IntersectionObserver(entries => {
-        entries.forEach(e => {
-          if (!e.isIntersecting) return;
-          e.target.classList.add('in');
-          const n = e.target.querySelector('[data-count]');
-          if (n) animateCount(n);
-          observer.unobserve(e.target);
-        });
-      }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    const u = a.user, md = u.user_metadata || {};
+    const name = md.full_name || md.name || u.email || '';
+    $('account-name').textContent = name;
+    $('account-initial').textContent = (name || '?').trim().charAt(0).toUpperCase();
+    const pic = md.avatar_url || md.picture;
+    if (pic && /^https:\/\//.test(pic)) {
+      const im = document.createElement('img');
+      im.src = pic; im.alt = ''; im.referrerPolicy = 'no-referrer';
+      btn.appendChild(im); $('account-initial').hidden = true;
     }
-    document.querySelectorAll('.reveal:not(.in)').forEach(el => observer.observe(el));
   }
 
-  function renderAll() {
-    renderHero(); renderStats(); renderServices(); renderAbout(); renderFaq(); renderContact();
-    observeReveals();
-  }
+  /* ---------- Particle hero canvas ---------- */
+  function heroCanvas() {
+    const cv = $('hero-canvas'); if (!cv) return;
+    const ctx = cv.getContext('2d');
+    let w = 0, h = 0, dpr = 1, pts = [], tick = 0, visible = true;
+    const mouse = { x: -9999, y: -9999 };
+    const col = { a: '#4de1ff', b: '#8b5cf6' };
 
-  /* ---------- Load editable content ---------- */
-  async function load() {
-    renderAll(); // show defaults instantly
-    try {
-      const { data, error } = await sb.from('site_content').select('key,value');
-      if (!error && data && data.length) {
-        data.forEach(r => { if (r.value !== null && r.key in C) C[r.key] = r.value; });
-        renderAll();
+    function readColors() {
+      const cs = getComputedStyle(document.documentElement);
+      col.a = cs.getPropertyValue('--accent').trim() || col.a;
+      col.b = cs.getPropertyValue('--accent-2').trim() || col.b;
+    }
+    function resize() {
+      const r = cv.parentElement.getBoundingClientRect();
+      dpr = Math.min(devicePixelRatio || 1, 2);
+      w = r.width; h = r.height;
+      cv.width = w * dpr; cv.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const n = Math.min(110, Math.floor((w * h) / 14000));
+      pts = Array.from({ length: n }, () => ({
+        x: Math.random() * w, y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.28, vy: (Math.random() - 0.5) * 0.28,
+        r: Math.random() * 1.7 + 0.5, c: Math.random() > 0.5 ? 'a' : 'b'
+      }));
+    }
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i];
+        if (!reduce) {
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0 || p.x > w) p.vx *= -1;
+          if (p.y < 0 || p.y > h) p.vy *= -1;
+          const dx = p.x - mouse.x, dy = p.y - mouse.y, d = Math.hypot(dx, dy);
+          if (d < 140 && d > 0) { p.x += (dx / d) * 1.6; p.y += (dy / d) * 1.6; }
+        }
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = col[p.c];
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.2832); ctx.fill();
+        for (let j = i + 1; j < pts.length; j++) {
+          const q = pts[j], d = Math.hypot(p.x - q.x, p.y - q.y);
+          if (d < 120) {
+            ctx.globalAlpha = (1 - d / 120) * 0.35;
+            ctx.strokeStyle = col.a; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+          }
+        }
       }
-    } catch (e) { /* keep defaults */ }
+      ctx.globalAlpha = 1;
+    }
+    function frame() {
+      if (visible && !document.hidden) { if ((tick++ % 90) === 0) readColors(); draw(); }
+      if (!reduce) requestAnimationFrame(frame);
+    }
+    readColors(); resize(); draw();
+    if (!reduce) frame();
+    addEventListener('resize', () => { resize(); draw(); });
+    document.addEventListener('holo:theme', () => { readColors(); draw(); });
+    cv.parentElement.addEventListener('pointermove', e => {
+      const r = cv.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+    });
+    cv.parentElement.addEventListener('pointerleave', () => { mouse.x = mouse.y = -9999; });
+    if ('IntersectionObserver' in window) new IntersectionObserver(es => { visible = es[0].isIntersecting; }).observe(cv.parentElement);
   }
 
-  /* ---------- Nav behaviour ---------- */
-  function initNav() {
-    const nav = $('nav'), links = $('nav-links'), toggle = $('nav-toggle');
-    const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 24);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-
-    toggle.addEventListener('click', () => {
-      const open = links.classList.toggle('open');
-      toggle.textContent = open ? '✕' : '☰';
-      toggle.setAttribute('aria-expanded', open);
+  /* ---------- Statement: words light up while scrolling ---------- */
+  function splitScrub() {
+    scrubWords = [];
+    document.querySelectorAll('.scrub').forEach(el => {
+      const text = el.textContent.trim();
+      if (!text) return;
+      el.textContent = '';
+      const list = [];
+      text.split(/\s+/).forEach((word, i, arr) => {
+        const s = document.createElement('span');
+        s.className = 'w'; s.textContent = word;
+        el.appendChild(s);
+        if (i < arr.length - 1) el.appendChild(document.createTextNode(' '));
+        list.push(s);
+      });
+      scrubWords.push({ el, list });
     });
-    links.addEventListener('click', e => {
-      if (e.target.closest('a')) { links.classList.remove('open'); toggle.textContent = '☰'; }
-    });
-
-    // Show "Dashboard" instead of "Log in" when signed in
-    Auth.access().then(a => {
-      if (!a) return;
-      const b = $('nav-login');
-      b.textContent = 'Dashboard';
-      b.href = a.isStaff ? '/admin' : '/dashboard';
-    }).catch(() => {});
   }
 
-  /* ---------- Misc ---------- */
-  function initMisc() {
+  function onScroll() {
+    const y = scrollY, vh = innerHeight;
+    $('nav').classList.toggle('scrolled', y > 30);
+
+    const inner = $('hero-inner');
+    if (inner && y < vh * 1.2 && !document.body.classList.contains('editing')) {
+      const p = clamp(y / vh, 0, 1);
+      inner.style.transform = 'translate3d(0,' + (y * 0.28) + 'px,0) scale(' + (1 - p * 0.07) + ')';
+      inner.style.opacity = String(1 - p * 1.15);
+    }
+    scrubWords.forEach(({ el, list }) => {
+      if (!el.isConnected || !list[0] || !list[0].isConnected) return;
+      const r = el.getBoundingClientRect();
+      const p = clamp((vh * 0.88 - r.top) / (vh * 0.5 + r.height * 0.5), 0, 1);
+      const n = Math.round(p * list.length * 1.05);
+      list.forEach((s, i) => s.classList.toggle('on', i < n));
+    });
+  }
+  let raf = 0;
+  const onScrollRaf = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; onScroll(); }); };
+
+  /* ---------- Team (from the staff_members table) ---------- */
+  async function renderTeam() {
+    const box = $('team'), grid = $('team-grid');
+    try {
+      const { data, error } = await sb.from('staff_members').select('*')
+        .eq('visible', true).order('position', { ascending: true }).order('created_at', { ascending: true });
+      if (error || !data || !data.length) return;
+      grid.innerHTML = data.map((m, i) => {
+        const ini = esc((m.name || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase());
+        const photo = m.photo_url && /^https:\/\//.test(m.photo_url)
+          ? '<img src="' + esc(m.photo_url) + '" alt="' + esc(m.name) + '" loading="lazy">'
+          : '<span class="initials">' + ini + '</span>';
+        const links = [];
+        if (m.instagram) links.push('<a href="' + esc(Site.safeUrl(m.instagram)) + '" target="_blank" rel="noopener noreferrer">Instagram</a>');
+        if (m.linkedin) links.push('<a href="' + esc(Site.safeUrl(m.linkedin)) + '" target="_blank" rel="noopener noreferrer">LinkedIn</a>');
+        const bio = (m.bio || links.length)
+          ? '<div class="staff-bio">' + (m.bio ? '<p>' + esc(m.bio) + '</p>' : '') + (links.length ? '<div class="staff-links">' + links.join('') + '</div>' : '') + '</div>'
+          : '';
+        return '<article class="staff reveal" style="--d:' + (i % 4) * 90 + 'ms" tabindex="0">' +
+          '<div class="staff-photo">' + photo + bio + '</div>' +
+          '<div class="staff-info"><h4>' + esc(m.name) + '</h4>' + (m.title ? '<p>' + esc(m.title) + '</p>' : '') + '</div></article>';
+      }).join('');
+      box.hidden = false;
+      UI.observe(box);
+    } catch (e) { /* team stays hidden */ }
+  }
+
+  /* ---------- Init ---------- */
+  document.addEventListener('DOMContentLoaded', () => {
+    initMenu();
+    initAccount();
+    heroCanvas();
     $('year').textContent = new Date().getFullYear();
-    $('ig-link').href = HOLO.SOCIAL.instagram;
-    $('li-link').href = HOLO.SOCIAL.linkedin;
-    $('cta-chat').addEventListener('click', () => window.HoloSupport && HoloSupport.open());
-
-    // cursor glow on service cards
-    document.addEventListener('pointermove', e => {
-      const card = e.target.closest && e.target.closest('.card-glow');
-      if (!card) return;
-      const r = card.getBoundingClientRect();
-      card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
-      card.style.setProperty('--my', (e.clientY - r.top) + 'px');
-    });
-  }
-
-  document.addEventListener('DOMContentLoaded', () => { initNav(); initMisc(); load(); });
+    addEventListener('scroll', onScrollRaf, { passive: true });
+    addEventListener('resize', onScrollRaf);
+    onScroll();
+    Site.ready.then(() => { splitScrub(); renderTeam(); UI.observe(); onScroll(); });
+  });
 })();
