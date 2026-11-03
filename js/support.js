@@ -17,7 +17,7 @@
   panel.innerHTML =
     '<header class="hc-head">' +
     '<img src="' + HOLO.LOGO + '" alt="">' +
-    '<div><strong>Holomatrix Support</strong><span>We usually reply within a few hours</span></div>' +
+    '<div><strong>Holomatrix Support</strong><span>Online</span></div>' +
     '<button class="hc-close" aria-label="Close chat">✕</button>' +
     '</header>' +
     '<div class="hc-body" id="hc-body"></div>' +
@@ -70,7 +70,7 @@
       box.className = 'hc-login';
       box.innerHTML =
         '<div style="font-size:2.4rem">💬</div>' +
-        '<p>Log in to chat with the Holomatrix team. It only takes a moment.</p>' +
+        '<p>Log in to chat with the Holomatrix team.</p>' +
         '<a class="btn btn-primary" href="/login?next=' + encodeURIComponent(location.pathname) + '">Log in to chat</a>';
       body.appendChild(box);
       return;
