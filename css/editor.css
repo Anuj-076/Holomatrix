@@ -1,0 +1,62 @@
+/* On-site editor (only loaded for people with edit permission) */
+.ed-dock { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 9000; }
+.ed-pill, .ed-bar button {
+  padding: 11px 20px; border-radius: 999px; font-weight: 600; font-size: 0.9rem;
+  background: var(--glass); border: 1px solid var(--border); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow); transition: transform 0.2s, border-color 0.2s;
+}
+.ed-pill:hover, .ed-bar button:hover { transform: translateY(-2px); border-color: var(--accent); }
+.ed-bar {
+  display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 999px;
+  background: var(--glass); border: 1px solid var(--accent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: var(--shadow);
+}
+.ed-bar button { box-shadow: none; padding: 9px 16px; }
+.ed-bar .ed-save { background: var(--accent-grad); color: var(--on-accent); border: 0; }
+.ed-bar .ed-save:disabled { opacity: 0.6; }
+.ed-live { display: inline-flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 0.85rem; color: var(--muted); }
+.ed-live::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--danger); animation: ed-blink 1.4s infinite; }
+@keyframes ed-blink { 50% { opacity: 0.25; } }
+
+body.editing [data-t] {
+  outline: 1px dashed color-mix(in srgb, var(--accent) 65%, transparent); outline-offset: 4px; cursor: text; caret-color: var(--accent);
+}
+body.editing [data-t]:hover { outline-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+body.editing [data-t]:empty { display: inline-block; min-width: 120px; min-height: 1.2em; }
+body.editing [data-t]:empty::before { content: attr(data-ph); opacity: 0.45; }
+body.editing .reveal, body.editing .reveal-clip { opacity: 1 !important; transform: none !important; clip-path: none !important; }
+body.editing .cursor-ring { display: none; }
+
+.ed-img-btn { position: absolute; inset: auto 10px 10px auto; z-index: 5; display: flex; gap: 6px; }
+.ed-img-btn button {
+  padding: 8px 14px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+  background: var(--bg-2); border: 1px solid var(--accent); color: var(--text); box-shadow: var(--shadow);
+}
+body.editing .img-slot { outline: 2px dashed color-mix(in srgb, var(--accent) 65%, transparent); outline-offset: -2px; }
+
+.ed-drawer {
+  position: fixed; top: 0; left: 0; bottom: 0; width: min(330px, 92vw); z-index: 9100; overflow-y: auto;
+  background: var(--bg-2); border-right: 1px solid var(--border); box-shadow: var(--shadow);
+  transform: translateX(-105%); transition: transform 0.5s var(--ease); padding: 18px;
+}
+.ed-drawer.open { transform: none; }
+.ed-dh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-family: var(--font-head); font-size: 1.2rem; }
+.ed-dh button { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); }
+.ed-sec { padding: 16px 0; border-top: 1px solid var(--border); }
+.ed-sec h5 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 12px; }
+.ed-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+.ed-seg button { padding: 9px; border-radius: 10px; border: 1px solid var(--border); font-size: 0.85rem; }
+.ed-seg button.on { background: var(--accent-grad); color: var(--on-accent); border-color: transparent; font-weight: 600; }
+.ed-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; font-size: 0.9rem; }
+.ed-row span { display: inline-flex; align-items: center; gap: 8px; }
+.ed-row code { font-size: 0.75rem; color: var(--muted); }
+.ed-row input[type="color"] { width: 38px; height: 30px; border: 1px solid var(--border); border-radius: 8px; background: none; padding: 2px; cursor: pointer; }
+.ed-row button { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border); }
+.ed-row button:disabled { opacity: 0.3; cursor: default; }
+.ed-field { display: grid; gap: 6px; margin-bottom: 12px; }
+.ed-field label { font-size: 0.8rem; color: var(--muted); }
+.ed-field input, .ed-field select {
+  width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font: inherit; font-size: 0.88rem;
+}
+.ed-hint { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
+.ed-link { color: var(--accent); font-size: 0.85rem; margin-top: 10px; text-decoration: underline; }
