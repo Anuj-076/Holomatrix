@@ -18,54 +18,23 @@
 
   <script src="/js/boot.js"></script>
   <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/header.css">
   <link rel="stylesheet" href="/css/landing.css">
   <link rel="stylesheet" href="/css/blocks.css">
-  <link rel="stylesheet" href="/css/support.css">
+  <link rel="stylesheet" href="/css/intro.css">
 </head>
-<body>
+<body data-hdr="over">
 
-  <!-- ===== NAV ===== -->
-  <header class="nav" id="nav">
-    <div class="wide nav-inner">
-      <a href="/" class="brand" aria-label="Holomatrix home">
-        <span class="img-slot logo-slot" data-img="brand.logo" data-alt="Holomatrix logo"><img src="/logo.jpg" alt="Holomatrix logo"></span>
-        <span data-t="brand.name">Holomatrix</span>
-      </a>
-      <div class="nav-actions">
-        <button class="btn btn-ghost btn-icon" data-theme-toggle aria-label="Toggle theme">🌙</button>
-        <a href="/login" id="nav-login" class="btn btn-ghost btn-sm" data-guest><span data-t="nav.login">Log in</span></a>
-        <div class="account" id="account" data-user hidden>
-          <button class="avatar-btn" id="account-btn" aria-label="Account"><span id="account-initial">?</span></button>
-          <div class="account-menu" id="account-menu">
-            <div class="account-name" id="account-name"></div>
-            <a href="/dashboard">My dashboard</a>
-            <a href="/admin" data-staff hidden>Admin dashboard</a>
-            <button data-logout>Log out</button>
-          </div>
-        </div>
-        <button class="menu-btn" id="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="menu"><span></span><span></span></button>
-      </div>
-    </div>
-  </header>
-
-  <!-- ===== FULL-SCREEN MENU ===== -->
-  <div class="menu" id="menu" aria-hidden="true">
-    <div class="menu-inner">
-      <nav class="menu-links" aria-label="Main">
-        <div class="row" style="--i:0"><a href="#home" data-nav="hero"><i>01</i><span data-t="menu.home">Home</span></a></div>
-        <div class="row" style="--i:1"><a href="#about" data-nav="about"><i>02</i><span data-t="menu.about">About</span></a></div>
-        <div class="row" style="--i:2" data-guest><a href="/login"><i>03</i><span data-t="menu.login">Log in</span></a></div>
-        <div class="row" style="--i:3" data-guest><a href="/signup"><i>04</i><span data-t="menu.signup">Sign up</span></a></div>
-        <div class="row" style="--i:2" data-user hidden><a href="/dashboard"><i>03</i><span data-t="menu.dashboard">Dashboard</span></a></div>
-        <div class="row" style="--i:3" data-user data-staff hidden><a href="/admin"><i>04</i><span data-t="menu.admin">Admin</span></a></div>
-        <div class="row" style="--i:4" data-user hidden><button data-logout><i>05</i><span data-t="menu.logout">Log out</span></button></div>
-      </nav>
-      <div class="menu-side">
-        <a href="https://www.instagram.com/holomatrix_consulting/" target="_blank" rel="noopener noreferrer" data-link="social.instagram" data-label="Instagram (menu + footer)"><span>Instagram</span></a>
-        <a href="https://www.linkedin.com/company/holomatrixconsulting" target="_blank" rel="noopener noreferrer" data-link="social.linkedin" data-label="LinkedIn (menu + footer)"><span>LinkedIn</span></a>
-      </div>
-    </div>
+  <!-- ===== BRAIN INTRO (plays once per visit) ===== -->
+  <div id="intro" role="presentation">
+    <canvas id="intro-cv"></canvas>
+    <div class="dim"></div>
+    <div id="intro-th"></div>
+    <button id="intro-skip" type="button" aria-label="Skip intro">Skip</button>
+    <div class="flash"></div>
   </div>
+
+  <div id="site-header"></div>
 
   <main>
     <!-- ===== HERO ===== -->
@@ -87,7 +56,7 @@
           <div class="holo-core img-slot" data-img="brand.logo"><img src="/logo.jpg" alt=""></div>
         </div>
       </div>
-      <a class="scroll-cue" href="#about" data-nav="about"><span data-t="hero.scroll">Scroll</span><i></i></a>
+      <a class="scroll-cue" href="#about"><span data-t="hero.scroll">Scroll</span><i></i></a>
     </section>
 
     <!-- ===== ABOUT ===== -->
@@ -98,7 +67,6 @@
           <h2 class="scrub" data-t="about.statement" data-multiline data-ph="Write your big statement here"></h2>
         </div>
 
-        <!-- Owner -->
         <div class="owner" id="owner">
           <div class="owner-media img-slot reveal-clip" data-img="owner.photo" data-alt="Amal Pushp">
             <span class="initials" data-t="owner.initials">AP</span>
@@ -115,7 +83,6 @@
           </div>
         </div>
 
-        <!-- Team (from the staff_members table, hidden when empty) -->
         <div class="team" id="team" hidden>
           <div class="reveal">
             <p class="kicker" data-t="team.kicker">Team</p>
@@ -126,7 +93,7 @@
       </div>
     </section>
 
-    <!-- ===== CUSTOM BLOCKS (made in Admin → Website → Blocks) ===== -->
+    <!-- ===== CUSTOM BLOCKS (Admin → Website → Blocks) ===== -->
     <section class="blocks" id="blocks" data-section="blocks" data-label="Custom blocks">
       <div class="wide" id="blocks-list"></div>
     </section>
@@ -156,8 +123,10 @@
   <script src="/js/ui.js"></script>
   <script src="/js/icons.js"></script>
   <script src="/js/blocks.js"></script>
+  <script src="/js/common.js"></script>
   <script src="/js/site.js"></script>
-  <script src="/js/support.js"></script>
+  <script src="/js/header.js"></script>
   <script src="/js/landing.js"></script>
+  <script src="/js/intro.js"></script>
 </body>
 </html>
