@@ -1,0 +1,46 @@
+/* Brain intro (full screen, runs once on the home page) */
+#intro {
+  display: none; position: fixed; inset: 0; z-index: 19990; overflow: hidden; color: #fff;
+  background: radial-gradient(ellipse at 50% 45%, #0b1633 0%, #040814 55%, #02040a 100%);
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; --fs: 16px;
+  height: 100vh; height: 100dvh;
+}
+html.intro-on #intro { display: block; }
+html.intro-on { background: #02040a; }
+html.intro-on body > * { visibility: hidden; }
+html.intro-on body > #intro { visibility: visible; }
+
+#intro canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+#intro .dim { position: absolute; inset: 0; background: radial-gradient(circle at 50% 40%, transparent 20%, rgba(0, 0, 8, 0.85) 100%); opacity: 0; pointer-events: none; }
+#intro-th { position: absolute; inset: 0; pointer-events: none; }
+
+#intro .th {
+  position: absolute; left: 0; top: 0; opacity: 0; padding: 0.55em 1em; border-radius: 14px; text-align: center; white-space: nowrap;
+  font-size: var(--fs); background: rgba(8, 16, 38, 0.74); border: 1px solid rgba(120, 200, 255, 0.38);
+  box-shadow: 0 0 26px rgba(77, 225, 255, 0.22), inset 0 0 18px rgba(77, 140, 255, 0.1);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); will-change: transform, opacity;
+}
+#intro .th .f { font-size: 1em; font-weight: 600; color: #eaf6ff; font-family: 'Cambria Math', 'STIX Two Math', 'Noto Sans Math', 'Times New Roman', serif; letter-spacing: 0.01em; }
+#intro .th .c { font-size: 0.58em; color: #8fb9dc; margin-top: 0.25em; letter-spacing: 0.04em; }
+#intro .th sub, #intro .th sup { font-size: 0.65em; line-height: 0; }
+
+#intro .th.big {
+  display: flex; align-items: center; gap: 0.6em; padding: 0.5em 1.1em 0.5em 0.6em; font-size: calc(var(--fs) * 1.9); border-radius: 999px;
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 50px rgba(255, 90, 200, 0.45), 0 0 100px rgba(80, 160, 255, 0.4);
+}
+#intro .th.big img { width: 1.9em; height: 1.9em; border-radius: 50%; object-fit: cover; box-shadow: 0 0 18px rgba(255, 255, 255, 0.5); }
+#intro .rainbow {
+  font-weight: 700; letter-spacing: -0.02em; font-family: 'Space Grotesk', system-ui, sans-serif;
+  background: linear-gradient(90deg, #ff3d6e, #ffb02e, #f5ff4d, #3dff9a, #34c7ff, #7b61ff, #ff4de1, #ff3d6e);
+  background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: rb 2.2s linear infinite;
+}
+@keyframes rb { to { background-position: -300% 0; } }
+
+#intro-skip {
+  position: absolute; right: 18px; bottom: 18px; z-index: 5; padding: 9px 20px; border-radius: 999px; font-size: 0.85rem; font-weight: 600;
+  color: #cfe3ff; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.25); cursor: pointer; transition: background 0.2s;
+}
+#intro-skip:hover { background: rgba(255, 255, 255, 0.18); }
+#intro .flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 4; }
