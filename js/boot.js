@@ -38,14 +38,19 @@
     });
   } catch (e) {}
 
-  /* ---- Page-transition curtain: show it immediately when arriving ---- */
+  /* ---- Intro (home page, once per session) or curtain (everything else) ---- */
   try {
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var coming = sessionStorage.getItem('holo-vt');
     var seen = sessionStorage.getItem('holo-seen');
-    if (!reduce && (coming || !seen)) {
+    var introDone = sessionStorage.getItem('holo-intro');
+    var onHome = /^\/(landing\/?)?$/.test(location.pathname);
+    if (!reduce && onHome && !introDone && !coming) {
+      d.classList.add('intro-on');
+      setTimeout(function () { d.classList.remove('intro-on'); }, 30000); // safety net
+    } else if (!reduce && (coming || !seen)) {
       d.classList.add('vt-in');
-      setTimeout(function () { d.classList.remove('vt-in'); }, 4500); // safety net
+      setTimeout(function () { d.classList.remove('vt-in'); }, 4500);     // safety net
     }
     sessionStorage.removeItem('holo-vt');
   } catch (e) {}
