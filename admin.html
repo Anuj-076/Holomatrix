@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Holomatrix</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/jpeg" href="/logo.jpg">
+  <link rel="apple-touch-icon" href="/logo.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="/js/boot.js"></script>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/blocks.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="dash-body">
+
+  <div class="gate" id="gate" hidden>
+    <div>
+      <h1>No access</h1>
+      <p>Your account doesn't have admin permissions.</p>
+      <a class="btn btn-primary" href="/">Back to home</a>
+    </div>
+  </div>
+
+  <div class="app" id="app" hidden>
+    <aside class="side" id="side">
+      <a href="/" class="brand">
+        <span class="img-slot logo-slot" style="width:38px;height:38px"><img src="/logo.jpg" alt=""></span>
+        <span>Holomatrix</span>
+      </a>
+      <nav id="nav" aria-label="Admin"></nav>
+      <div class="side-foot" id="who"></div>
+    </aside>
+    <div class="scrim" id="scrim"></div>
+
+    <div class="main">
+      <header class="top">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="btn btn-ghost btn-icon" id="burger" aria-label="Menu">☰</button>
+          <strong id="crumb">Admin</strong>
+        </div>
+        <div class="top-r">
+          <button class="btn btn-ghost btn-icon" data-theme-toggle aria-label="Toggle theme">🌙</button>
+          <a class="btn btn-ghost btn-sm" href="/">View site</a>
+        </div>
+      </header>
+      <div id="view"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/icons.js"></script>
+  <script src="/js/media.js"></script>
+  <script src="/js/blocks.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>
