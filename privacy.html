@@ -11,29 +11,19 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="/js/boot.js"></script>
   <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/header.css">
   <link rel="stylesheet" href="/css/pages.css">
-  <link rel="stylesheet" href="/css/support.css">
+  <link rel="stylesheet" href="/css/site-pages.css">
 </head>
 <body>
-  <div class="wide">
-    <header class="pg-head">
-      <a href="/" class="brand">
-        <span class="img-slot logo-slot" data-img="brand.logo"><img src="/logo.jpg" alt="Holomatrix logo"></span>
-        <span data-t="brand.name">Holomatrix</span>
-      </a>
-      <div class="pg-actions">
-        <button class="btn btn-ghost btn-icon" data-theme-toggle aria-label="Toggle theme">🌙</button>
-        <a class="btn btn-ghost btn-sm" href="/">Home</a>
-      </div>
-    </header>
-
-    <main class="page">
-      <h1 data-t="legal.privacy.title">Privacy Policy</h1>
-      <div class="legal-body" data-t="legal.privacy.body" data-multiline>What we collect
-When you create an account we store your email address and your name. If you sign in with Google or LinkedIn, we also receive your basic profile details, such as your profile picture. If you use the support chat, we store the messages you send.
+  <div id="site-header"></div>
+  <main class="pg"><div class="wide"><div class="page" style="padding-top:20px">
+    <h1 data-t="legal.privacy.title">Privacy Policy</h1>
+    <div class="legal-body" data-t="legal.privacy.body" data-multiline>What we collect
+When you create an account we store your email address and your name. If you sign in with Google or LinkedIn, we also receive your basic profile details, such as your profile picture. If you contact us, we store the messages you send. If you create a client profile, we store the details you enter and show them to logged-in members while your profile is visible.
 
 How we use it
-We use this information to create and secure your account, to show you your dashboard, to answer your support messages, and to send you emails such as sign-up confirmation, password resets and announcements from the Holomatrix team.
+We use this information to create and secure your account, to show you your dashboard, to answer your messages, to run the client directory, and to send you emails such as sign-up confirmation, password resets and announcements from the Holomatrix team. You can turn announcements off in your dashboard settings.
 
 Services we use
 This website runs on Vercel (hosting), Supabase (accounts and database) and Brevo (email delivery). These providers process your data only to operate the website. Google and LinkedIn share basic profile details with us only when you choose to sign in with them.
@@ -42,21 +32,17 @@ Cookies and local storage
 We store your login session, your theme choice and your cookie choice in your browser. We do not use them for advertising.
 
 Your choices
-You can ask us to correct or delete your account and data through the support chat on this website.</div>
-    </main>
-
-    <footer class="pg-foot">
-      <span>© <span id="year"></span> <span data-t="brand.name">Holomatrix</span></span>
-      <span><a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a></span>
-    </footer>
-  </div>
+You can edit or delete your client profile at any time from the Client page, and you can ask us to correct or delete your account and data through the Contact us page.</div>
+  </div></div></main>
+  <div id="site-footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/config.js"></script>
   <script src="/js/supabase-client.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/icons.js"></script>
+  <script src="/js/common.js"></script>
   <script src="/js/site.js"></script>
-  <script src="/js/support.js"></script>
-  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  <script src="/js/header.js"></script>
 </body>
 </html>
