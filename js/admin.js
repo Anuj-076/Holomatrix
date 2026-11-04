@@ -4,25 +4,29 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const esc = UI.esc;
+  const HC = HoloCommon;
   const fmt = d => new Date(d).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
   const ini = n => (n || '?').trim().charAt(0).toUpperCase();
   const fail = e => UI.toast((e && e.message) || 'Something went wrong.', 'error', 6500);
   const hexv = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : '';
   const clone = o => JSON.parse(JSON.stringify(o));
-  let A = null, myTop = 9999, channel = null;
+  let A = null, myTop = 9999, channel = null, tick = null;
   const can = p => A.can(p);
   const C = { roles: [], nm: null };
   const R = {};
 
   const PERMS = {
-    administrator: ['Administrator', 'Every permission. Give this only to people you fully trust.'],
+    administrator: ['Administrator', 'Every permission, including editing subscription packs. Give this only to people you fully trust.'],
     view_dashboard: ['View dashboard', 'Open the admin dashboard.'],
     manage_users: ['Manage users', 'See the user list.'],
     ban_users: ['Ban users', 'Ban or unban members ranked below you.'],
     manage_roles: ['Manage roles', 'Create, edit, reorder and delete roles.'],
     assign_roles: ['Assign roles', 'Give or remove roles from users.'],
     send_announcements: ['Send announcements', 'Email announcements to members.'],
-    edit_site_content: ['Edit website', 'Edit text, people, blocks, images and links.'],
+    edit_site_content: ['Edit website', 'Edit text, menu, people, blocks, images and links.'],
+    manage_content: ['Manage news & research', 'Upload, edit and delete articles and research papers.'],
+    manage_clients: ['Manage clients', 'Hide, suspend or delete client profiles.'],
+    manage_subscriptions: ['Manage subscriptions', 'Grant or cancel member subscriptions.'],
     view_support: ['View support chats', 'Read member conversations.'],
     reply_support: ['Reply to support', 'Answer and close chats.'],
     view_analytics: ['View analytics', 'Reserved for analytics.'],
@@ -32,7 +36,8 @@
     ['Special', ['administrator']],
     ['General', ['view_dashboard', 'view_analytics', 'view_logs']],
     ['People', ['manage_users', 'ban_users', 'manage_roles', 'assign_roles']],
-    ['Content', ['edit_site_content', 'send_announcements']],
+    ['Content', ['edit_site_content', 'manage_content', 'send_announcements']],
+    ['Members', ['manage_clients', 'manage_subscriptions']],
     ['Support', ['view_support', 'reply_support']]
   ];
   const TABS = [
@@ -40,6 +45,9 @@
     { id: 'users', label: 'Users', ico: '👥', perm: ['manage_users', 'assign_roles'] },
     { id: 'roles', label: 'Roles', ico: '🛡️', perm: ['manage_roles'] },
     { id: 'support', label: 'Support', ico: '💬', perm: ['view_support'] },
+    { id: 'content', label: 'News & Research', ico: '📰', perm: ['manage_content'] },
+    { id: 'clients', label: 'Clients', ico: '🧑‍💼', perm: ['manage_clients'] },
+    { id: 'subs', label: 'Subscriptions', ico: '⭐', perm: ['manage_subscriptions'] },
     { id: 'website', label: 'Website', ico: '🌐', perm: ['edit_site_content'] },
     { id: 'announce', label: 'Announcements', ico: '📣', perm: ['send_announcements'] },
     { id: 'logs', label: 'Audit logs', ico: '📜', perm: ['view_logs'] }
@@ -62,8 +70,9 @@
     requestAnimationFrame(() => b.classList.add('show'));
     return { el: b.querySelector('.dlg-b'), close };
   }
-  const avatar = (u, big) => '<span class="av">' + (u.avatar_url && /^https:\/\//.test(u.avatar_url) ? '<img src="' + esc(u.avatar_url) + '" alt="" referrerpolicy="no-referrer">' : esc(ini(u.full_name || u.email))) + '</span>';
+  const avatar = u => '<span class="av">' + (u && u.avatar_url && /^https:\/\//.test(u.avatar_url) ? '<img src="' + esc(u.avatar_url) + '" alt="" referrerpolicy="no-referrer">' : esc(ini((u && (u.full_name || u.email)) || '?'))) + '</span>';
   const chip = r => '<span class="chip" style="--c:' + esc(hexv(r.color) || '#8b5cf6') + '">' + esc(r.name) + '</span>';
+  const myName = () => { const md = A.user.user_metadata || {}; return md.full_name || md.name || A.user.email; };
 
   async function saveContent(key, value) {
     const { error } = await sb.from('site_content').upsert({ key, value, updated_by: A.user.id, updated_at: new Date().toISOString() }, { onConflict: 'key' });
@@ -93,6 +102,12 @@
     if (a.indexOf('site_content.') === 0) return 'Updated site content “' + (d.key || '') + '”';
     if (a.indexOf('site_blocks.') === 0) return verb + ' block “' + (d.title || d.type || '') + '”';
     if (a.indexOf('staff_members.') === 0) return verb + ' person “' + (d.name || '') + '”';
+    if (a.indexOf('articles.') === 0) return verb + ' article “' + (d.title || '') + '”';
+    if (a.indexOf('researches.') === 0) return verb + ' research “' + (d.title || '') + '”';
+    if (a.indexOf('plans.') === 0) return 'Edited plan “' + (d.name || '') + '”';
+    if (a === 'subscriptions.insert') return 'Granted a subscription to ' + un(d.user_id);
+    if (a === 'subscriptions.update') return 'Changed a subscription of ' + un(d.user_id) + ' (' + (d.status || '') + ')';
+    if (a === 'subscriptions.delete') return 'Deleted a subscription of ' + un(d.user_id);
     if (a === 'announcement.send') return 'Sent announcement “' + (d.subject || '') + '” to ' + (d.recipients || 0) + ' people';
     return l.target || '';
   }
@@ -100,13 +115,13 @@
   /* ---------- Shell + router ---------- */
   function buildShell() {
     $('#nav').innerHTML = TABS.filter(allowed).map(t => '<a class="nav-i" href="#' + t.id + '" data-tab="' + t.id + '"><span>' + t.ico + '</span>' + t.label + '</a>').join('');
-    const me = A.user, md = me.user_metadata || {};
-    $('#who').innerHTML = '<div><b>' + esc(md.full_name || md.name || me.email) + '</b>' + A.roles.map(chip).join('') + '</div><button class="btn btn-ghost btn-sm" id="out">Log out</button>';
+    const me = A.user;
+    $('#who').innerHTML = '<div><b>' + esc(myName()) + '</b>' + A.roles.map(chip).join('') + '</div><button class="btn btn-ghost btn-sm" id="out">Log out</button>';
     $('#out').onclick = () => Auth.signOut();
     $('#burger').onclick = () => document.body.classList.toggle('side-open');
     $('#scrim').onclick = () => document.body.classList.remove('side-open');
   }
-  function cleanup() { if (channel) { sb.removeChannel(channel); channel = null; } }
+  function cleanup() { if (channel) { sb.removeChannel(channel); channel = null; } if (tick) { clearInterval(tick); tick = null; } }
   async function route() {
     cleanup();
     const parts = (location.hash || '#overview').slice(1).split('/');
@@ -127,7 +142,11 @@
     const jobs = [
       ['Members', '👥', can('manage_users') && (() => cnt('profiles'))],
       ['Open support chats', '💬', can('view_support') && (() => cnt('support_conversations', q => q.eq('status', 'open')))],
-      ['People on the site', '🧑‍💼', can('edit_site_content') && (() => cnt('staff_members'))],
+      ['Articles', '📰', can('manage_content') && (() => cnt('articles'))],
+      ['Researches', '🔬', can('manage_content') && (() => cnt('researches'))],
+      ['Client profiles', '🧑‍💼', can('manage_clients') && (() => cnt('client_profiles'))],
+      ['Active subscriptions', '⭐', can('manage_subscriptions') && (() => cnt('subscriptions', q => q.eq('status', 'active')))],
+      ['People on the site', '🧑‍🔬', can('edit_site_content') && (() => cnt('staff_members'))],
       ['Custom blocks', '🧱', can('edit_site_content') && (() => cnt('site_blocks'))],
       ['Announcements sent', '📣', can('send_announcements') && (() => cnt('announcements'))]
     ].filter(j => j[2]);
@@ -138,8 +157,7 @@
       const { data } = await sb.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(8);
       logs = '<div class="panel"><h4>Recent activity</h4>' + ((data || []).map(l => '<div class="rowitem"><div class="grow"><b>' + esc(describe(l)) + '</b><small>' + esc(l.actor_email || 'system') + ' · ' + fmt(l.created_at) + '</small></div></div>').join('') || '<div class="empty">Nothing yet.</div>') + '</div>';
     }
-    const md = A.user.user_metadata || {};
-    v.innerHTML = '<h2 class="pt">Welcome, ' + esc((md.full_name || md.name || A.user.email).split(' ')[0]) + ' 👋</h2><p class="psub">Your roles: ' + A.roles.map(chip).join('') + '</p>' +
+    v.innerHTML = '<h2 class="pt">Welcome, ' + esc(myName().split(' ')[0]) + ' 👋</h2><p class="psub">Your roles: ' + A.roles.map(chip).join('') + '</p>' +
       '<div class="cards">' + jobs.map((j, i) => '<div class="card stat-c"><span>' + j[1] + '</span><div class="n gradient-text">' + nums[i] + '</div><small>' + j[0] + '</small></div>').join('') + '</div>' + logs;
   };
 
@@ -185,7 +203,7 @@
       const u = users.find(x => x.id === b.dataset.id);
       if (b.dataset.act === 'ban') {
         const ban = !u.is_banned;
-        if (!(await UI.confirm((ban ? 'Ban ' : 'Unban ') + (u.full_name || u.email) + '?', ban ? 'They will be signed out and unable to log in.' : 'They will be able to log in again.', { confirmText: ban ? 'Ban' : 'Unban', danger: ban }))) return;
+        if (!(await UI.confirm((ban ? 'Ban ' : 'Unban ') + (u.full_name || u.email) + '?', ban ? 'They will be unable to log in.' : 'They will be able to log in again.', { confirmText: ban ? 'Ban' : 'Unban', danger: ban }))) return;
         const { error } = await sb.rpc('admin_set_ban', { target: u.id, banned: ban });
         if (error) return fail(error);
         u.is_banned = ban; draw($('#usearch').value); UI.toast(ban ? 'User banned.' : 'User unbanned.', 'success');
@@ -287,55 +305,82 @@
     await load(); await draw();
   };
 
-  /* ================= SUPPORT ================= */
+  /* ================= SUPPORT (Contact us inbox) ================= */
   R.support = async v => {
     let convs = [], cur = null, msgs = [];
     const canReply = can('reply_support');
+    const EDIT_MS = 15 * 60 * 1000, DEL_MS = 24 * 60 * 60 * 1000;
     const seenKey = id => 'holo-seen-' + id;
-    v.innerHTML = '<h2 class="pt">Support</h2><p class="psub">Live conversations from members.</p><div class="chat"><div class="clist" id="clist"></div><div class="cview" id="cview"><div class="empty">Select a conversation.</div></div></div>';
+    const age = m => Date.now() - new Date(m.created_at).getTime();
+    v.innerHTML = '<h2 class="pt">Support</h2><p class="psub">Live conversations from the Contact us page. The first admin who replies is shown to the member as their helper.</p><div class="chat"><div class="clist" id="clist"></div><div class="cview" id="cview"><div class="empty">Select a conversation.</div></div></div>';
 
     async function loadConvs() {
       const { data, error } = await sb.from('support_conversations').select('*, profiles(full_name,email,avatar_url)').order('last_message_at', { ascending: false }).limit(100);
       if (error) return fail(error);
       convs = (data || []).sort((a, b) => (a.status === b.status ? 0 : a.status === 'open' ? -1 : 1));
+      if (cur) { const f = convs.find(c => c.id === cur.id); if (f) { const changed = f.status !== cur.status || f.assigned_name !== cur.assigned_name; cur = f; if (changed) drawChat(); } }
       drawList();
     }
     function drawList() {
       $('#clist').innerHTML = convs.map(c => {
         const u = c.profiles || {};
         const isNew = (!cur || cur.id !== c.id) && (+localStorage.getItem(seenKey(c.id)) || 0) < new Date(c.last_message_at).getTime();
-        return '<button class="citem ' + (cur && cur.id === c.id ? 'on' : '') + '" data-id="' + c.id + '">' + avatar(u) + '<span class="grow"><b>' + esc(u.full_name || u.email || 'Member') + '</b><small>' + (c.status === 'closed' ? 'Closed · ' : '') + fmt(c.last_message_at) + '</small></span>' + (isNew ? '<span class="newdot"></span>' : '') + '</button>';
+        return '<button class="citem ' + (cur && cur.id === c.id ? 'on' : '') + '" data-id="' + c.id + '">' + avatar(u) + '<span class="grow"><b>' + esc(u.full_name || u.email || 'Member') + '</b><small>' + (c.status === 'closed' ? 'Closed · ' : '') + (c.assigned_name ? '👤 ' + esc(c.assigned_name) + ' · ' : '') + fmt(c.last_message_at) + '</small></span>' + (isNew ? '<span class="newdot"></span>' : '') + '</button>';
       }).join('') || '<div class="empty">No conversations yet.</div>';
     }
-    function bubble(m) { return '<div class="bub ' + (m.sender_type === 'user' ? 'user' : 'staff') + '">' + esc(m.body) + '<small>' + fmt(m.created_at) + '</small></div>'; }
+    function bubble(m) {
+      const mine = m.sender_id === A.user.id && m.sender_type === 'staff';
+      const acts = mine ? (age(m) < EDIT_MS ? '<button class="lk" data-edit="' + m.id + '">Edit</button>' : '') + (age(m) < DEL_MS ? '<button class="lk" data-del="' + m.id + '">Delete</button>' : '') : '';
+      return '<div class="bub ' + (m.sender_type === 'user' ? 'user' : 'staff') + '">' + (m.sender_type === 'staff' ? '<span class="sn">' + esc(m.sender_name || 'Staff') + '</span>' : '') + esc(m.body) +
+        '<small>' + fmt(m.created_at) + (m.edited_at ? ' · edited' : '') + '</small>' + (acts ? '<div class="macts">' + acts + '</div>' : '') + '</div>';
+    }
+    function drawMsgs(scroll) { const box = $('#msgs'); if (!box) return; box.innerHTML = msgs.map(bubble).join(''); if (scroll) box.scrollTop = box.scrollHeight; }
     function drawChat() {
       const u = cur.profiles || {};
-      $('#cview').innerHTML = '<div class="chead"><div class="who">' + avatar(u) + '<div><b>' + esc(u.full_name || 'Member') + '</b><small>' + esc(u.email || '') + '</small></div></div>' +
-        (canReply ? '<button class="ib" id="ctog">' + (cur.status === 'open' ? 'Close chat' : 'Reopen') + '</button>' : '') + '</div>' +
-        '<div class="msgs" id="msgs">' + msgs.map(bubble).join('') + '</div>' +
-        (canReply ? '<form class="cform" id="cform" autocomplete="off"><input class="input" id="cin" placeholder="Write a reply…" maxlength="1000" required><button class="btn btn-primary btn-sm">Send</button></form>' : '');
-      const box = $('#msgs'); box.scrollTop = box.scrollHeight;
+      $('#cview').innerHTML = '<div class="chead"><div class="who">' + avatar(u) + '<div><b>' + esc(u.full_name || 'Member') + '</b><small>' + esc(u.email || '') + '</small>' +
+        (cur.assigned_name ? '<small class="assist">✓ Assisted by ' + esc(cur.assigned_name) + '</small>' : '<small>Unassigned</small>') + '</div></div>' +
+        (canReply ? '<div class="acts">' + (cur.assigned_to !== A.user.id && cur.status === 'open' ? '<button class="ib" id="cassign">Assign to me</button>' : '') + '<button class="ib" id="ctog">' + (cur.status === 'open' ? 'Close chat' : 'Reopen') + '</button></div>' : '') + '</div>' +
+        '<div class="msgs" id="msgs"></div>' +
+        (canReply && cur.status === 'open' ? '<form class="cform" id="cform" autocomplete="off"><input class="input" id="cin" placeholder="Write a reply…" maxlength="1000" required><button class="btn btn-primary btn-sm">Send</button></form>' : '');
+      drawMsgs(true);
+      if ($('#cassign')) $('#cassign').onclick = async () => {
+        const { error } = await sb.from('support_conversations').update({ assigned_to: A.user.id }).eq('id', cur.id);
+        if (error) return fail(error); UI.toast('You are now assisting this member.', 'success'); loadConvs();
+      };
       if ($('#ctog')) $('#ctog').onclick = async () => {
         const st = cur.status === 'open' ? 'closed' : 'open';
         const { error } = await sb.from('support_conversations').update({ status: st }).eq('id', cur.id);
-        if (error) return fail(error);
-        cur.status = st; drawChat(); loadConvs();
+        if (error) return fail(error); cur.status = st; drawChat(); loadConvs();
       };
       if ($('#cform')) $('#cform').onsubmit = async e => {
         e.preventDefault();
-        const inp = $('#cin'), text = inp.value.trim(); if (!text) return;
-        inp.value = '';
+        const inp = $('#cin'), text = inp.value.trim(); if (!text) return; inp.value = '';
         const { data, error } = await sb.from('support_messages').insert({ conversation_id: cur.id, sender_type: 'staff', sender_id: A.user.id, body: text }).select().single();
         if (error) { inp.value = text; return fail(error); }
-        addMsg(data);
+        addMsg(data); loadConvs();
+      };
+      $('#msgs').onclick = async e => {
+        const ed = e.target.closest('[data-edit]'), dl = e.target.closest('[data-del]');
+        if (ed) {
+          const m = msgs.find(x => x.id === ed.dataset.edit); if (!m) return;
+          const val = await UI.prompt('Edit message', 'You can edit for 15 minutes after sending.', { value: m.body });
+          if (val === null || !val.trim() || val.trim() === m.body) return;
+          const { data, error } = await sb.from('support_messages').update({ body: val.trim().slice(0, 1000) }).eq('id', m.id).select();
+          if (error || !data || !data.length) return UI.toast('This message can no longer be edited.', 'error');
+          Object.assign(m, data[0]); drawMsgs();
+        }
+        if (dl) {
+          const m = msgs.find(x => x.id === dl.dataset.del); if (!m) return;
+          if (!(await UI.confirm('Delete this message?', 'It will be removed for the member too.', { confirmText: 'Delete', danger: true }))) return;
+          const { data, error } = await sb.from('support_messages').delete().eq('id', m.id).select();
+          if (error || !data || !data.length) return UI.toast('Messages can only be deleted within 1 day.', 'error');
+          msgs = msgs.filter(x => x.id !== m.id); drawMsgs();
+        }
       };
     }
     function addMsg(m) {
       if (!cur || m.conversation_id !== cur.id || msgs.some(x => x.id === m.id)) return;
-      msgs.push(m);
-      const box = $('#msgs'); if (!box) return;
-      box.insertAdjacentHTML('beforeend', bubble(m)); box.scrollTop = box.scrollHeight;
-      localStorage.setItem(seenKey(cur.id), Date.now());
+      msgs.push(m); drawMsgs(true); localStorage.setItem(seenKey(cur.id), Date.now());
     }
     $('#clist').onclick = async e => {
       const b = e.target.closest('[data-id]'); if (!b) return;
@@ -348,12 +393,260 @@
     await loadConvs();
     channel = sb.channel('admin-support')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, p => { addMsg(p.new); loadConvs(); })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'support_messages' }, p => { const i = msgs.findIndex(x => x.id === p.new.id); if (i > -1) { msgs[i] = p.new; drawMsgs(); } })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'support_messages' }, p => { if (p.old && msgs.some(x => x.id === p.old.id)) { msgs = msgs.filter(x => x.id !== p.old.id); drawMsgs(); } })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'support_conversations' }, () => loadConvs())
       .subscribe();
+    tick = setInterval(() => drawMsgs(), 30000);   // hides Edit / Delete when time runs out
   };
 
+  /* ================= NEWS & RESEARCH ================= */
+  R.content = async (v, sub) => {
+    sub = sub === 'research' ? 'research' : 'news';
+    v.innerHTML = '<h2 class="pt">News &amp; Research</h2><p class="psub">Upload articles and research papers. Research content is premium-only for members.</p><div class="seg"><a href="#content/news" class="' + (sub === 'news' ? 'on' : '') + '">📰 News</a><a href="#content/research" class="' + (sub === 'research' ? 'on' : '') + '">🔬 Researches</a></div><div id="cbox"><div class="loading">Loading…</div></div>';
+    await (sub === 'news' ? contentNews : contentResearch)($('#cbox'));
+  };
+
+  async function contentNews(box) {
+    const { data, error } = await sb.from('articles').select('id,title,category,published,created_at,author_name').order('created_at', { ascending: false });
+    if (error) throw error;
+    const list = data || [];
+    box.innerHTML = '<div class="toolbar"><button class="btn btn-primary btn-sm" id="anew">+ New article</button></div><div id="alist"></div>';
+    $('#alist').innerHTML = list.map(a => '<div class="rowitem ' + (a.published ? '' : 'dim') + '"><div class="grow"><b>' + esc(a.title) + '</b><small><span class="bdg">' + esc(HC.catLabel(HC.NEWS_CATS, a.category)) + '</span>' + fmt(a.created_at) + (a.author_name ? ' · ' + esc(a.author_name) : '') + (a.published ? '' : ' · draft') + '</small></div>' +
+      '<div class="acts"><button class="ib" data-e="' + a.id + '">Edit</button><button class="ib danger" data-d="' + a.id + '">Delete</button></div></div>').join('') || '<div class="empty">No articles yet.</div>';
+    const reload = () => contentNews(box);
+    $('#anew').onclick = () => articleDialog(null, reload);
+    $('#alist').onclick = async e => {
+      const ed = e.target.closest('[data-e]'), dl = e.target.closest('[data-d]');
+      if (ed) { const { data: a } = await sb.from('articles').select('*').eq('id', ed.dataset.e).single(); articleDialog(a, reload); }
+      if (dl) {
+        if (!(await UI.confirm('Delete this article?', 'It is removed from the website.', { confirmText: 'Delete', danger: true }))) return;
+        const { error } = await sb.from('articles').delete().eq('id', dl.dataset.d); if (error) return fail(error); reload();
+      }
+    };
+  }
+
+  function articleDialog(a, done) {
+    const p = a ? clone(a) : { title: '', category: 'physics', summary: '', body: '', cover_url: '', published: true };
+    const cats = HC.NEWS_CATS.filter(c => c[0] !== 'all');
+    const d = dialog(a ? 'Edit article' : 'New article',
+      '<div class="field"><label>Title *</label><input class="input" id="at" maxlength="200" value="' + esc(p.title) + '"></div>' +
+      '<div class="two"><div class="field"><label>Category *</label><select class="input" id="ac">' + cats.map(c => '<option value="' + c[0] + '"' + (p.category === c[0] ? ' selected' : '') + '>' + c[1] + '</option>').join('') + '</select></div>' +
+      '<div class="field"><label>Cover image</label><div style="display:flex;gap:8px;align-items:center"><div class="thumb wide" id="acv"></div><button type="button" class="ib" id="aup">Upload</button><button type="button" class="ib" id="arm">✕</button></div></div></div>' +
+      '<div class="field"><label>Short summary (shown on the card)</label><textarea class="input" id="as" maxlength="400" style="min-height:80px">' + esc(p.summary || '') + '</textarea></div>' +
+      '<div class="field"><label>Article text (blank line = new paragraph)</label><textarea class="input" id="ab" style="min-height:240px">' + esc(p.body || '') + '</textarea></div>' +
+      '<label class="chk"><input type="checkbox" id="apub" ' + (p.published ? 'checked' : '') + '> Published (untick to keep as a draft)</label>' +
+      '<div class="dlg-f"><button class="btn btn-ghost btn-sm" id="acancel">Cancel</button><button class="btn btn-primary btn-sm" id="asave">Save article</button></div>', { wide: true });
+    const el = d.el;
+    const cover = () => { $('#acv', el).innerHTML = p.cover_url ? '<img src="' + esc(p.cover_url) + '" alt="">' : '—'; };
+    cover();
+    $('#aup', el).onclick = () => {
+      const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/png,image/jpeg,image/webp,image/gif';
+      inp.onchange = async () => { if (!inp.files[0]) return; UI.toast('Uploading…'); try { p.cover_url = await HoloMedia.upload(inp.files[0], { folder: 'news', max: 1600 }); cover(); UI.toast('Cover ready.', 'success'); } catch (e) { fail(e); } };
+      inp.click();
+    };
+    $('#arm', el).onclick = () => { p.cover_url = ''; cover(); };
+    $('#acancel', el).onclick = d.close;
+    $('#asave', el).onclick = async () => {
+      const title = $('#at', el).value.trim(); if (!title) return UI.toast('Please enter a title.', 'warn');
+      const row = { title, category: $('#ac', el).value, summary: $('#as', el).value.trim() || null, body: $('#ab', el).value.trim() || null, cover_url: p.cover_url || null, published: $('#apub', el).checked, updated_at: new Date().toISOString() };
+      const res = a ? await sb.from('articles').update(row).eq('id', a.id) : await sb.from('articles').insert(Object.assign(row, { author_id: A.user.id, author_name: myName() }));
+      if (res.error) return fail(res.error);
+      UI.toast('Article saved.', 'success'); d.close(); done();
+    };
+  }
+
+  async function contentResearch(box) {
+    const { data, error } = await sb.from('researches').select('id,title,category,published,created_at,authors').order('created_at', { ascending: false });
+    if (error) throw error;
+    const list = data || [];
+    box.innerHTML = '<div class="toolbar"><button class="btn btn-primary btn-sm" id="rnew">+ New research</button></div><div id="rlist2"></div>';
+    $('#rlist2').innerHTML = list.map(r => '<div class="rowitem ' + (r.published ? '' : 'dim') + '"><div class="grow"><b>' + esc(r.title) + '</b><small><span class="bdg warn">★ Premium</span><span class="bdg">' + esc(HC.catLabel(HC.RES_CATS, r.category)) + '</span>' + fmt(r.created_at) + (r.authors ? ' · ' + esc(r.authors) : '') + (r.published ? '' : ' · draft') + '</small></div>' +
+      '<div class="acts"><button class="ib" data-e="' + r.id + '">Edit</button><button class="ib danger" data-d="' + r.id + '">Delete</button></div></div>').join('') || '<div class="empty">No researches yet.</div>';
+    const reload = () => contentResearch(box);
+    $('#rnew').onclick = () => researchDialog(null, null, reload);
+    $('#rlist2').onclick = async e => {
+      const ed = e.target.closest('[data-e]'), dl = e.target.closest('[data-d]');
+      if (ed) {
+        const [r, c] = await Promise.all([sb.from('researches').select('*').eq('id', ed.dataset.e).single(), sb.from('research_content').select('*').eq('research_id', ed.dataset.e).maybeSingle()]);
+        researchDialog(r.data, c.data, reload);
+      }
+      if (dl) {
+        if (!(await UI.confirm('Delete this research?', 'The paper and its file are removed.', { confirmText: 'Delete', danger: true }))) return;
+        const c = await sb.from('research_content').select('file_path').eq('research_id', dl.dataset.d).maybeSingle();
+        const { error } = await sb.from('researches').delete().eq('id', dl.dataset.d); if (error) return fail(error);
+        if (c.data && c.data.file_path) sb.storage.from('research-files').remove([c.data.file_path]);
+        reload();
+      }
+    };
+  }
+
+  function researchDialog(r, c, done) {
+    const p = r ? clone(r) : { title: '', category: 'physics', summary: '', authors: '', cover_url: '', published: true };
+    const k = c ? clone(c) : { body: '', external_url: '', file_path: '' };
+    const cats = HC.RES_CATS.filter(x => x[0] !== 'all');
+    const d = dialog(r ? 'Edit research' : 'New research',
+      '<div class="field"><label>Title *</label><input class="input" id="rt" maxlength="250" value="' + esc(p.title) + '"></div>' +
+      '<div class="two"><div class="field"><label>Category *</label><select class="input" id="rc">' + cats.map(x => '<option value="' + x[0] + '"' + (p.category === x[0] ? ' selected' : '') + '>' + x[1] + '</option>').join('') + '</select></div>' +
+      '<div class="field"><label>Authors</label><input class="input" id="ra" maxlength="200" value="' + esc(p.authors || '') + '"></div></div>' +
+      '<div class="field"><label>Cover image</label><div style="display:flex;gap:8px;align-items:center"><div class="thumb wide" id="rcv"></div><button type="button" class="ib" id="rup">Upload</button><button type="button" class="ib" id="rrm">✕</button></div></div>' +
+      '<div class="field"><label>Summary (public, shown on the card)</label><textarea class="input" id="rs" maxlength="500" style="min-height:90px">' + esc(p.summary || '') + '</textarea></div>' +
+      '<h4 style="margin:14px 0 8px">Premium content (only subscribers can read this)</h4>' +
+      '<div class="field"><label>Full text (blank line = new paragraph)</label><textarea class="input" id="rb" style="min-height:200px">' + esc(k.body || '') + '</textarea></div>' +
+      '<div class="two"><div class="field"><label>Original source link (optional)</label><input class="input" id="rx" placeholder="https://…" value="' + esc(k.external_url || '') + '"></div>' +
+      '<div class="field"><label>PDF file (max 25 MB)</label><div style="display:flex;gap:8px;align-items:center"><span id="rf" class="hint" style="margin:0">' + (k.file_path ? '📄 PDF attached' : 'No file') + '</span><button type="button" class="ib" id="rfup">Upload PDF</button><button type="button" class="ib" id="rfrm">✕</button></div></div></div>' +
+      '<label class="chk"><input type="checkbox" id="rpub" ' + (p.published ? 'checked' : '') + '> Published (untick to keep as a draft)</label>' +
+      '<div class="dlg-f"><button class="btn btn-ghost btn-sm" id="rcancel">Cancel</button><button class="btn btn-primary btn-sm" id="rsave2">Save research</button></div>', { wide: true });
+    const el = d.el;
+    const cover = () => { $('#rcv', el).innerHTML = p.cover_url ? '<img src="' + esc(p.cover_url) + '" alt="">' : '—'; };
+    cover();
+    $('#rup', el).onclick = () => {
+      const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/png,image/jpeg,image/webp,image/gif';
+      inp.onchange = async () => { if (!inp.files[0]) return; UI.toast('Uploading…'); try { p.cover_url = await HoloMedia.upload(inp.files[0], { folder: 'research', max: 1600 }); cover(); UI.toast('Cover ready.', 'success'); } catch (e) { fail(e); } };
+      inp.click();
+    };
+    $('#rrm', el).onclick = () => { p.cover_url = ''; cover(); };
+    $('#rfup', el).onclick = () => {
+      const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/pdf';
+      inp.onchange = async () => {
+        const f = inp.files[0]; if (!f) return;
+        if (f.type !== 'application/pdf') return UI.toast('Please choose a PDF file.', 'warn');
+        if (f.size > 25 * 1024 * 1024) return UI.toast('PDF is too large (max 25 MB).', 'warn');
+        UI.toast('Uploading PDF…');
+        const path = 'papers/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.pdf';
+        const { error } = await sb.storage.from('research-files').upload(path, f, { contentType: 'application/pdf' });
+        if (error) return fail(error);
+        k.file_path = path; $('#rf', el).textContent = '📄 PDF attached'; UI.toast('PDF ready. Press Save.', 'success');
+      };
+      inp.click();
+    };
+    $('#rfrm', el).onclick = () => { k.file_path = ''; $('#rf', el).textContent = 'No file'; };
+    $('#rcancel', el).onclick = d.close;
+    $('#rsave2', el).onclick = async () => {
+      const title = $('#rt', el).value.trim(); if (!title) return UI.toast('Please enter a title.', 'warn');
+      const ext = $('#rx', el).value.trim(), extUrl = ext ? HC.normUrl(ext) : '';
+      if (ext && !extUrl) return UI.toast('The source link is not valid.', 'warn');
+      const row = { title, category: $('#rc', el).value, authors: $('#ra', el).value.trim() || null, summary: $('#rs', el).value.trim() || null, cover_url: p.cover_url || null, published: $('#rpub', el).checked };
+      let id = r && r.id;
+      if (r) { const res = await sb.from('researches').update(row).eq('id', id); if (res.error) return fail(res.error); }
+      else { const res = await sb.from('researches').insert(row).select().single(); if (res.error) return fail(res.error); id = res.data.id; }
+      const cr = await sb.from('research_content').upsert({ research_id: id, body: $('#rb', el).value.trim() || null, external_url: extUrl || null, file_path: k.file_path || null }, { onConflict: 'research_id' });
+      if (cr.error) return fail(cr.error);
+      UI.toast('Research saved.', 'success'); d.close(); done();
+    };
+  }
+
+  /* ================= CLIENTS ================= */
+  R.clients = async v => {
+    const { data, error } = await sb.from('client_profiles').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    const list = data || [];
+    v.innerHTML = '<h2 class="pt">Clients</h2><p class="psub">Profiles created from “Become a client”. Suspend a profile to remove it from “Hire a client”.</p><div class="toolbar"><input class="input" id="csearch" placeholder="Search name or headline…"></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Client</th><th>Fields</th><th>Status</th><th>Created</th><th></th></tr></thead><tbody id="ctb"></tbody></table></div>';
+    const draw = q => {
+      q = (q || '').toLowerCase();
+      $('#ctb').innerHTML = list.filter(c => !q || (c.display_name + ' ' + (c.headline || '')).toLowerCase().includes(q)).map(c =>
+        '<tr><td><div class="who"><span class="av">' + (c.photo_url && /^https:\/\//.test(c.photo_url) ? '<img src="' + esc(c.photo_url) + '" alt="" referrerpolicy="no-referrer">' : esc(ini(c.display_name))) + '</span><div><b>' + esc(c.display_name) + '</b><small>' + esc(c.headline || '') + '</small></div></div></td>' +
+        '<td>' + (c.fields || []).map(f => '<span class="bdg">' + esc(HC.catLabel(HC.FIELDS, f)) + '</span>').join('') + '</td>' +
+        '<td>' + (c.status === 'suspended' ? '<span class="tag tag-bad">Suspended</span>' : (c.visible ? '<span class="tag tag-ok">Visible</span>' : '<span class="tag tag-mut">Hidden by owner</span>')) + '</td>' +
+        '<td>' + new Date(c.created_at).toLocaleDateString() + '</td>' +
+        '<td><div class="acts"><button class="ib" data-s="' + c.id + '">' + (c.status === 'suspended' ? 'Restore' : 'Suspend') + '</button><button class="ib danger" data-d="' + c.id + '">Delete</button></div></td></tr>').join('') || '<tr><td colspan="5"><div class="empty">No client profiles yet.</div></td></tr>';
+    };
+    draw();
+    $('#csearch').oninput = e => draw(e.target.value);
+    $('#ctb').onclick = async e => {
+      const s = e.target.closest('[data-s]'), dl = e.target.closest('[data-d]');
+      if (s) {
+        const c = list.find(x => x.id === s.dataset.s), st = c.status === 'suspended' ? 'approved' : 'suspended';
+        const { error } = await sb.from('client_profiles').update({ status: st }).eq('id', c.id); if (error) return fail(error);
+        c.status = st; draw($('#csearch').value); UI.toast(st === 'suspended' ? 'Profile suspended.' : 'Profile restored.', 'success');
+      }
+      if (dl) {
+        const c = list.find(x => x.id === dl.dataset.d);
+        if (!(await UI.confirm('Delete “' + c.display_name + '”?', 'The profile is removed. The member can create a new one.', { confirmText: 'Delete', danger: true }))) return;
+        const { error } = await sb.from('client_profiles').delete().eq('id', c.id); if (error) return fail(error);
+        list.splice(list.indexOf(c), 1); draw($('#csearch').value);
+      }
+    };
+  };
+
+  /* ================= SUBSCRIPTIONS ================= */
+  R.subs = async v => {
+    const [pl, sr] = await Promise.all([
+      sb.from('plans').select('*').order('slot'),
+      sb.from('subscriptions').select('*, plans(name), profiles(full_name,email)').order('created_at', { ascending: false }).limit(200)
+    ]);
+    if (pl.error) throw pl.error;
+    const plans = pl.data || [], subs = sr.data || [];
+    const isAdm = A.isAdmin;
+    const stat = s => s.status === 'cancelled' ? ['Cancelled', 'tag-bad'] : (s.expires_at && new Date(s.expires_at) <= new Date() ? ['Expired', 'tag-mut'] : ['Active', 'tag-ok']);
+
+    v.innerHTML = '<h2 class="pt">Subscriptions</h2><p class="psub">Five packs. Payments are connected later, so grant packs by hand for now.</p>' +
+      '<div class="plgrid">' + plans.map(p => '<div class="plbox ' + (p.active ? '' : 'off') + '"><h4>' + esc(p.name) + '</h4><small>' + (p.price_text ? esc(p.price_text) + (p.period_text ? ' / ' + esc(p.period_text) : '') : 'No price yet') + ' · ' + p.duration_days + ' days</small><small>' + ((p.features || []).length) + ' feature(s)' + (p.active ? '' : ' · hidden') + '</small>' +
+        (isAdm ? '<button class="ib" data-pe="' + p.id + '" style="margin-top:8px;width:max-content">Edit pack</button>' : '') + '</div>').join('') + '</div>' +
+      (isAdm ? '' : '<p class="hint" style="margin:-10px 0 20px">Only people with the Administrator permission can edit packs.</p>') +
+      '<div class="toolbar"><h4 class="grow" style="margin:0">Member subscriptions</h4><button class="btn btn-primary btn-sm" id="grant">+ Grant pack</button></div>' +
+      '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Member</th><th>Pack</th><th>Status</th><th>Expires</th><th>Source</th><th></th></tr></thead><tbody id="stb"></tbody></table></div>';
+    $('#stb').innerHTML = subs.map(s => { const st = stat(s), u = s.profiles || {}; return '<tr><td><div class="who">' + avatar(u) + '<div><b>' + esc(u.full_name || '—') + '</b><small>' + esc(u.email || '') + '</small></div></div></td><td>' + esc((s.plans && s.plans.name) || '—') + '</td><td><span class="tag ' + st[1] + '">' + st[0] + '</span></td><td>' + (s.expires_at ? new Date(s.expires_at).toLocaleDateString() : 'Never') + '</td><td>' + esc(s.provider) + '</td><td><div class="acts">' + (st[0] === 'Active' ? '<button class="ib danger" data-c="' + s.id + '">Cancel</button>' : '') + '</div></td></tr>'; }).join('') || '<tr><td colspan="6"><div class="empty">No subscriptions yet.</div></td></tr>';
+
+    v.onclick = async e => {
+      const pe = e.target.closest('[data-pe]'), c = e.target.closest('[data-c]');
+      if (pe) planDialog(plans.find(p => p.id === pe.dataset.pe), () => R.subs(v));
+      if (c) {
+        if (!(await UI.confirm('Cancel this subscription?', 'The member loses premium access immediately.', { confirmText: 'Cancel it', danger: true }))) return;
+        const { error } = await sb.from('subscriptions').update({ status: 'cancelled' }).eq('id', c.dataset.c); if (error) return fail(error); R.subs(v);
+      }
+    };
+    $('#grant').onclick = () => grantDialog(plans.filter(p => p.active), () => R.subs(v));
+  };
+
+  function planDialog(p, done) {
+    const d = dialog('Edit ' + p.name,
+      '<div class="two"><div class="field"><label>Pack name</label><input class="input" id="pn" maxlength="60" value="' + esc(p.name) + '"></div><div class="field"><label>Duration (days)</label><input class="input" id="pd" type="number" min="1" max="3650" value="' + p.duration_days + '"></div></div>' +
+      '<div class="two"><div class="field"><label>Price (text, e.g. $9 or ₹499)</label><input class="input" id="pp" maxlength="40" value="' + esc(p.price_text || '') + '"></div><div class="field"><label>Period (e.g. month)</label><input class="input" id="pe" maxlength="30" value="' + esc(p.period_text || '') + '"></div></div>' +
+      '<div class="field"><label>Description</label><textarea class="input" id="pds" maxlength="300" style="min-height:80px">' + esc(p.description || '') + '</textarea></div>' +
+      '<div class="field"><label>Features (one per line)</label><textarea class="input" id="pf" style="min-height:130px">' + esc((p.features || []).join('\n')) + '</textarea></div>' +
+      '<label class="chk"><input type="checkbox" id="pa" ' + (p.active ? 'checked' : '') + '> Show this pack on the website</label>' +
+      '<div class="dlg-f"><button class="btn btn-ghost btn-sm" id="pc">Cancel</button><button class="btn btn-primary btn-sm" id="ps">Save pack</button></div>');
+    const el = d.el;
+    $('#pc', el).onclick = d.close;
+    $('#ps', el).onclick = async () => {
+      const name = $('#pn', el).value.trim(); if (!name) return UI.toast('Please enter a name.', 'warn');
+      const row = { name, price_text: $('#pp', el).value.trim() || null, period_text: $('#pe', el).value.trim() || null, description: $('#pds', el).value.trim() || null, features: $('#pf', el).value.split('\n').map(x => x.trim()).filter(Boolean), duration_days: Math.max(1, +$('#pd', el).value || 30), active: $('#pa', el).checked };
+      const { error } = await sb.from('plans').update(row).eq('id', p.id); if (error) return fail(error);
+      UI.toast('Pack saved.', 'success'); d.close(); done();
+    };
+  }
+
+  function grantDialog(plans, done) {
+    let chosen = null;
+    const d = dialog('Grant a pack',
+      '<div class="field"><label>Find member by email</label><input class="input" id="ge" placeholder="Type part of an email…"></div><div class="pick" id="gl"></div>' +
+      '<div class="two"><div class="field"><label>Pack</label><select class="input" id="gp">' + plans.map(p => '<option value="' + p.id + '" data-days="' + p.duration_days + '">' + esc(p.name) + '</option>').join('') + '</select></div>' +
+      '<div class="field"><label>Days (0 = never expires)</label><input class="input" id="gd" type="number" min="0" max="3650" value="' + ((plans[0] && plans[0].duration_days) || 30) + '"></div></div>' +
+      '<div class="dlg-f"><button class="btn btn-ghost btn-sm" id="gc">Cancel</button><button class="btn btn-primary btn-sm" id="gs">Grant pack</button></div>');
+    const el = d.el; let timer;
+    $('#gp', el).onchange = e => { $('#gd', el).value = e.target.selectedOptions[0].dataset.days; };
+    $('#ge', el).oninput = e => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const t = e.target.value.trim().replace(/[%_,()]/g, ''); if (t.length < 2) { $('#gl', el).innerHTML = ''; return; }
+        const { data } = await sb.from('profiles').select('id,full_name,email,avatar_url').ilike('email', '%' + t + '%').limit(8);
+        $('#gl', el).innerHTML = (data || []).map(u => '<button type="button" data-u="' + u.id + '">' + avatar(u) + '<span><b>' + esc(u.full_name || '—') + '</b><br><small>' + esc(u.email) + '</small></span></button>').join('') || '<small class="hint">No matches.</small>';
+        $$('#gl [data-u]', el).forEach(b => b.onclick = () => { chosen = b.dataset.u; $$('#gl button', el).forEach(x => x.classList.toggle('on', x === b)); });
+      }, 250);
+    };
+    $('#gc', el).onclick = d.close;
+    $('#gs', el).onclick = async () => {
+      if (!chosen) return UI.toast('Pick a member first.', 'warn');
+      const days = Math.max(0, +$('#gd', el).value || 0);
+      const row = { user_id: chosen, plan_id: $('#gp', el).value, status: 'active', provider: 'manual', granted_by: A.user.id, expires_at: days ? new Date(Date.now() + days * 86400000).toISOString() : null };
+      const { error } = await sb.from('subscriptions').insert(row); if (error) return fail(error);
+      UI.toast('Pack granted.', 'success'); d.close(); done();
+    };
+  }
+
   /* ================= WEBSITE ================= */
-  const ICON_OPTS = '<option value="auto">Auto-detect</option>' + (window.HoloIcons ? HoloIcons.names.map(n => '<option value="' + n + '">' + HoloIcons.label(n) + '</option>').join('') : '');
+  const ICON_OPTS = '<option value="auto">Auto-detect</option>' + HoloIcons.names.map(n => '<option value="' + n + '">' + HoloIcons.label(n) + '</option>').join('');
 
   function linkRowHtml(it, i) {
     return '<div class="lrow" data-i="' + i + '"><span class="ico">' + HoloIcons.svg(HoloIcons.forItem(it)) + '</span>' +
@@ -365,10 +658,10 @@
 
   R.website = async (v, sub) => {
     sub = sub || 'people';
-    const subs = [['people', '🧑‍💼 People'], ['blocks', '🧱 Blocks'], ['media', '🖼️ Images & links'], ['pages', '📄 Pages']];
+    const subs = [['people', '🧑‍💼 People'], ['blocks', '🧱 Blocks'], ['menu', '☰ Menu'], ['media', '🖼️ Images & links'], ['pages', '📄 Pages']];
     v.innerHTML = '<h2 class="pt">Website</h2><p class="psub">Everything here updates the live site for everyone.</p><div class="seg">' +
       subs.map(s => '<a href="#website/' + s[0] + '" class="' + (s[0] === sub ? 'on' : '') + '">' + s[1] + '</a>').join('') + '</div><div id="wbox"><div class="loading">Loading…</div></div>';
-    await ({ people: webPeople, blocks: webBlocks, media: webMedia, pages: webPages }[sub] || webPeople)($('#wbox'));
+    await ({ people: webPeople, blocks: webBlocks, menu: webMenu, media: webMedia, pages: webPages }[sub] || webPeople)($('#wbox'));
   };
 
   /* ---------- People ---------- */
@@ -376,10 +669,10 @@
     const { data, error } = await sb.from('staff_members').select('*').order('position').order('created_at');
     if (error) throw error;
     const list = data || [];
-    box.innerHTML = '<div class="toolbar"><button class="btn btn-primary btn-sm" id="addp">+ Add person</button><span class="hint">Shown in the Team grid on the About section, in this order.</span></div><div id="plist"></div>';
+    box.innerHTML = '<div class="toolbar"><button class="btn btn-primary btn-sm" id="addp">+ Add person</button><span class="hint">Shown on the About us → Staff page, grouped as Scientists, Management and Executive team.</span></div><div id="plist"></div>';
     $('#plist').innerHTML = list.map((m, i) =>
       '<div class="rowitem ' + (m.visible ? '' : 'dim') + '"><div class="thumb">' + (m.photo_url ? '<img src="' + esc(m.photo_url) + '" alt="">' : esc(ini(m.name))) + '</div>' +
-      '<div class="grow"><b>' + esc(m.name) + '</b><small>' + esc(m.title || 'No title') + (m.visible ? '' : ' · hidden') + '</small></div>' +
+      '<div class="grow"><b>' + esc(m.name) + '</b><small><span class="bdg">' + esc(m.staff_group || 'Management') + '</span>' + esc(m.title || 'No role') + (m.visible ? '' : ' · hidden') + '</small></div>' +
       '<div class="acts"><button class="ib" data-a="up" data-i="' + i + '" ' + (i === 0 ? 'disabled' : '') + '>↑</button><button class="ib" data-a="dn" data-i="' + i + '" ' + (i === list.length - 1 ? 'disabled' : '') + '>↓</button>' +
       '<button class="ib" data-a="edit" data-i="' + i + '">Edit</button><button class="ib danger" data-a="del" data-i="' + i + '">Delete</button></div></div>').join('') || '<div class="empty">No people yet. Click “Add person”.</div>';
 
@@ -405,15 +698,16 @@
   }
 
   function personDialog(m, list, done) {
-    const p = m ? clone(m) : { name: '', title: '', bio: '', photo_url: '', visible: true, links: [] };
+    const p = m ? clone(m) : { name: '', title: '', bio: '', photo_url: '', visible: true, links: [], staff_group: 'Management', qualification: '' };
     let links = Array.isArray(p.links) && p.links.length ? clone(p.links) : [];
     if (!links.length) { if (p.instagram) links.push({ url: p.instagram }); if (p.linkedin) links.push({ url: p.linkedin }); }
     const d = dialog(m ? 'Edit person' : 'Add person',
-      '<div class="prof" style="margin-bottom:18px"><div class="thumb" id="pph" style="width:96px;height:96px;font-size:1.6rem"></div><div><button type="button" class="btn btn-ghost btn-sm" id="pup">📷 Upload photo</button> <button type="button" class="ib" id="prm">Remove</button><p class="hint">Square or portrait photos work best.</p></div></div>' +
+      '<div class="prof" style="margin-bottom:18px"><div class="thumb" id="pph" style="width:96px;height:96px;font-size:1.6rem"></div><div><button type="button" class="btn btn-ghost btn-sm" id="pup">📷 Upload photo</button> <button type="button" class="ib" id="prm">Remove</button><p class="hint">Portrait or square photos work best.</p></div></div>' +
       '<input type="file" id="pfile" accept="image/png,image/jpeg,image/webp,image/gif" hidden>' +
-      '<div class="two"><div class="field"><label>Name *</label><input class="input" id="pn" value="' + esc(p.name) + '" maxlength="80"></div><div class="field"><label>Title / role</label><input class="input" id="pt" value="' + esc(p.title || '') + '" maxlength="80"></div></div>' +
-      '<div class="field"><label>Short bio (shown on hover)</label><textarea class="input" id="pb" maxlength="400">' + esc(p.bio || '') + '</textarea></div>' +
-      '<label class="field" style="margin-bottom:8px"><span style="font-size:.85rem;color:var(--muted);font-weight:500">Links (icon is detected from the web address)</span></label><div id="plinks"></div>' +
+      '<div class="two"><div class="field"><label>Name *</label><input class="input" id="pn" value="' + esc(p.name) + '" maxlength="80"></div><div class="field"><label>Company role</label><input class="input" id="pt" value="' + esc(p.title || '') + '" maxlength="80"></div></div>' +
+      '<div class="two"><div class="field"><label>Group *</label><select class="input" id="pg">' + HC.GROUPS.map(g => '<option' + ((p.staff_group || 'Management') === g ? ' selected' : '') + '>' + g + '</option>').join('') + '</select></div><div class="field"><label>Qualification</label><input class="input" id="pq" value="' + esc(p.qualification || '') + '" maxlength="120" placeholder="e.g. Ph.D in Physics"></div></div>' +
+      '<div class="field"><label>Bio / details</label><textarea class="input" id="pb" maxlength="800">' + esc(p.bio || '') + '</textarea></div>' +
+      '<label class="field" style="margin-bottom:8px"><span style="font-size:.85rem;color:var(--muted);font-weight:500">Social links (icon is detected from the address; empty ones are not shown)</span></label><div id="plinks"></div>' +
       '<button type="button" class="ib" id="padd">+ Add link</button>' +
       '<label class="chk" style="margin-top:18px"><input type="checkbox" id="pv" ' + (p.visible ? 'checked' : '') + '> Visible on the website</label>' +
       '<div class="dlg-f"><button class="btn btn-ghost btn-sm" id="pcancel">Cancel</button><button class="btn btn-primary btn-sm" id="psave">Save</button></div>');
@@ -424,11 +718,9 @@
     el.addEventListener('input', e => {
       const t = e.target, row = t.closest('.lrow');
       if (row) { const i = +row.dataset.i; links[i][t.dataset.k] = t.value; $('.ico', row).innerHTML = HoloIcons.svg(HoloIcons.forItem(links[i])); }
-      if (t.id === 'pn') p.name = t.value, photo();
+      if (t.id === 'pn') { p.name = t.value; photo(); }
     });
-    el.addEventListener('click', e => {
-      const rm = e.target.closest('[data-rm]'); if (rm) { links.splice(+rm.dataset.rm, 1); drawLinks(); }
-    });
+    el.addEventListener('click', e => { const rm = e.target.closest('[data-rm]'); if (rm) { links.splice(+rm.dataset.rm, 1); drawLinks(); } });
     $('#padd', el).onclick = () => { links.push({ label: '', url: '', icon: 'auto' }); drawLinks(); };
     $('#pup', el).onclick = () => $('#pfile', el).click();
     $('#prm', el).onclick = () => { p.photo_url = ''; photo(); };
@@ -442,7 +734,8 @@
       const name = $('#pn', el).value.trim(); if (!name) return UI.toast('Please enter a name.', 'warn');
       const row = {
         name, title: $('#pt', el).value.trim() || null, bio: $('#pb', el).value.trim() || null, photo_url: p.photo_url || null,
-        visible: $('#pv', el).checked, links: links.filter(l => l.url && l.url.trim()).map(l => ({ label: (l.label || '').trim(), url: l.url.trim(), icon: l.icon || 'auto' }))
+        staff_group: $('#pg', el).value, qualification: $('#pq', el).value.trim() || null, visible: $('#pv', el).checked,
+        links: links.filter(l => l.url && l.url.trim()).map(l => ({ label: (l.label || '').trim(), url: l.url.trim(), icon: l.icon || 'auto' }))
       };
       const res = m ? await sb.from('staff_members').update(row).eq('id', m.id)
         : await sb.from('staff_members').insert(Object.assign(row, { position: list.length ? Math.max(...list.map(x => x.position)) + 1 : 0 }));
@@ -501,7 +794,7 @@
       '<div class="field"><label>Block name (only you see this)</label><input class="input" data-t="1" value="' + esc(b.title || '') + '" maxlength="80"></div>' +
       '<div class="field"><label>Heading</label><input class="input" data-d="heading" value="' + esc(b.data.heading || '') + '" maxlength="120"></div>' +
       (type === 'text' ? '<div class="field"><label>Message</label><textarea class="input" data-d="body" style="min-height:150px">' + esc(b.data.body || '') + '</textarea></div>' : '') +
-      (type === 'links' ? '<div class="field"><label>Layout</label>' + '<select class="input" data-d="layout"><option value="pills"' + (b.data.layout !== 'cards' ? ' selected' : '') + '>Pills</option><option value="cards"' + (b.data.layout === 'cards' ? ' selected' : '') + '>Big cards</option></select></div>' : '') +
+      (type === 'links' ? '<div class="field"><label>Layout</label><select class="input" data-d="layout"><option value="pills"' + (b.data.layout !== 'cards' ? ' selected' : '') + '>Pills</option><option value="cards"' + (b.data.layout === 'cards' ? ' selected' : '') + '>Big cards</option></select></div>' : '') +
       (type === 'photos' ? '<div class="two"><div class="field"><label>Columns</label><select class="input" data-d="cols">' + [2, 3, 4].map(n => '<option' + (+b.data.cols === n || (!b.data.cols && n === 3) ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></div><div class="field"><label>Shape</label><select class="input" data-d="shape">' + [['rounded', 'Rounded'], ['circle', 'Circle'], ['square', 'Square']].map(o => '<option value="' + o[0] + '"' + ((b.data.shape || 'rounded') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></div></div>' : '') +
       (type !== 'text' ? '<label class="field" style="margin-bottom:8px"><span style="font-size:.85rem;color:var(--muted);font-weight:500">' + (type === 'links' ? 'Links (the site logo is added automatically)' : 'Photos (empty ones are placeholders)') + '</span></label><div id="bitems">' + items() + '</div><button type="button" class="ib" id="badd">+ Add ' + (type === 'links' ? 'link' : 'photo') + '</button>' +
         '<label class="chk" style="margin-top:14px"><input type="checkbox" data-d="showEmpty" ' + (b.data.showEmpty ? 'checked' : '') + '> Show empty placeholders on the public site</label>' : '') +
@@ -556,11 +849,56 @@
     };
   }
 
+  /* ---------- Menu editor (top bar + dropdowns) ---------- */
+  async function webMenu(box) {
+    const c = await getContent(['nav']);
+    let nav = Array.isArray(c.nav) && c.nav.length ? clone(c.nav) : clone(HC.DEFAULT_NAV);
+    const row = (it, i, j) => {
+      const idx = j === undefined ? 'data-i="' + i + '"' : 'data-i="' + i + '" data-j="' + j + '"';
+      return '<div class="mrow" ' + idx + '><input class="input" data-k="label" placeholder="Name" value="' + esc(it.label || '') + '"><input class="input" data-k="href" placeholder="/page#section" value="' + esc(it.href || '') + '">' +
+        '<label class="chk"><input type="checkbox" data-k="premium" ' + (it.premium ? 'checked' : '') + '> Premium tag</label><label class="chk"><input type="checkbox" data-k="visible" ' + (it.visible !== false ? 'checked' : '') + '> Show</label>' +
+        '<span class="acts"><button class="ib" data-mv="-1" ' + idx + '>↑</button><button class="ib" data-mv="1" ' + idx + '>↓</button><button class="ib danger" data-del ' + idx + '>✕</button></span></div>';
+    };
+    const draw = () => {
+      box.innerHTML = '<p class="hint" style="margin-bottom:14px">These items appear in the top bar. Items with sub-items open a dropdown. Links can be a page like <code>/news#physics</code> or a full web address.</p><div id="mtree">' +
+        nav.map((it, i) => '<div class="mtop">' + row(it, i) + '<div class="mkids">' + (it.children || []).map((k, j) => row(k, i, j)).join('') + '<button class="ib" data-addk="' + i + '">+ Add sub-item</button></div></div>').join('') + '</div>' +
+        '<div class="toolbar"><button class="ib" id="maddt">+ Add menu item</button><span class="grow"></span><button class="btn btn-ghost btn-sm" id="mreset">Reset to default</button><button class="btn btn-primary btn-sm" id="msave">Save menu</button></div>';
+    };
+    draw();
+    box.oninput = e => {
+      const r = e.target.closest('.mrow'); if (!r || !e.target.dataset.k) return;
+      const i = +r.dataset.i, it = r.dataset.j !== undefined ? nav[i].children[+r.dataset.j] : nav[i];
+      it[e.target.dataset.k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    };
+    box.onclick = async e => {
+      const t = e.target;
+      if (t.id === 'maddt') { nav.push({ id: 'item' + Date.now(), label: 'New item', href: '/', visible: true, children: [] }); return draw(); }
+      if (t.dataset.addk !== undefined) { (nav[+t.dataset.addk].children = nav[+t.dataset.addk].children || []).push({ label: 'New link', href: '/' }); return draw(); }
+      if (t.dataset.mv) {
+        const i = +t.dataset.i, j = t.dataset.j !== undefined ? +t.dataset.j : null, d = +t.dataset.mv, arr = j === null ? nav : nav[i].children, k = j === null ? i : j;
+        if (arr[k + d]) { [arr[k], arr[k + d]] = [arr[k + d], arr[k]]; draw(); } return;
+      }
+      if (t.hasAttribute && t.hasAttribute('data-del')) {
+        const i = +t.dataset.i; if (t.dataset.j !== undefined) nav[i].children.splice(+t.dataset.j, 1); else nav.splice(i, 1); return draw();
+      }
+      if (t.id === 'mreset') { if (!(await UI.confirm('Reset the menu?', 'Your changes are replaced by the default menu. Press Save to publish it.', { confirmText: 'Reset' }))) return; nav = clone(HC.DEFAULT_NAV); return draw(); }
+      if (t.id === 'msave') {
+        const okUrl = u => /^(\/|#|https?:\/\/|mailto:)/i.test(String(u || '').trim());
+        for (const it of nav) {
+          if (!String(it.label || '').trim()) return UI.toast('Every menu item needs a name.', 'warn');
+          if (!okUrl(it.href)) return UI.toast('“' + it.label + '” needs a valid link (start with / or https://).', 'warn', 6000);
+          for (const k of (it.children || [])) { if (!String(k.label || '').trim() || !okUrl(k.href)) return UI.toast('Check the sub-items of “' + it.label + '”.', 'warn', 6000); }
+        }
+        try { await saveContent('nav', nav); UI.toast('Menu saved. It is live for everyone.', 'success'); } catch (er) { fail(er); }
+      }
+    };
+  }
+
   /* ---------- Images & links ---------- */
   const IMG_SLOTS = [['brand.logo', 'Logo (header, hero, loading, login)', '/logo.jpg'], ['owner.photo', 'Owner photo', '']];
   const LINK_KEYS = [
-    ['social.instagram', 'Holomatrix Instagram (menu + footer)', 'https://www.instagram.com/holomatrix_consulting/'],
-    ['social.linkedin', 'Holomatrix LinkedIn (menu + footer)', 'https://www.linkedin.com/company/holomatrixconsulting'],
+    ['social.instagram', 'Holomatrix Instagram (top bar + footer)', 'https://www.instagram.com/holomatrix_consulting/'],
+    ['social.linkedin', 'Holomatrix LinkedIn (top bar + footer)', 'https://www.linkedin.com/company/holomatrixconsulting'],
     ['owner.instagram', 'Owner Instagram', 'https://www.instagram.com/amalpjha2701/'],
     ['owner.linktree', 'Owner Linktree', 'https://linktr.ee/amalpushp']
   ];
@@ -596,9 +934,10 @@
   /* ---------- Pages ---------- */
   async function webPages(box) {
     box.innerHTML = '<div class="pcards">' +
-      [['/', 'Landing page', 'Edit headings, owner info, statement, button labels, colours, fonts, section order and more.'], ['/privacy', 'Privacy Policy', 'Click the text and edit it.'], ['/terms', 'Terms of Service', 'Click the text and edit it.']]
+      [['/', 'Landing page', 'Headings, owner info, statement, buttons, colours, fonts, section order.'], ['/news', 'News', 'Page title and intro.'], ['/research', 'Researches', 'Page title and intro.'], ['/about#holomatrix', 'About us → Holomatrix', 'Write the Holomatrix information here.'],
+        ['/clients', 'Clients', 'Title, intro and the payment warning text.'], ['/funds#donate', 'Funds → Donate', 'Edit the donation note and button labels.'], ['/contact', 'Contact us', 'Title and intro.'], ['/privacy', 'Privacy Policy', 'Click the text and edit it.'], ['/terms', 'Terms of Service', 'Click the text and edit it.']]
         .map(p => '<a class="card" href="' + p[0] + '"><h4>' + p[1] + '</h4><p>' + p[2] + '</p></a>').join('') + '</div>' +
-      '<div class="panel" style="margin-top:20px"><h4>How the visual editor works</h4><p class="psub" style="margin:0">Open a page above while logged in, then click the <b>✏️ Edit site</b> button at the bottom. Click any text to type, click a picture to change it, and use <b>🎨 Design</b> for colours, fonts, links and section order. Press <b>Save</b> and everyone sees it.</p></div>';
+      '<div class="panel" style="margin-top:20px"><h4>How the visual editor works</h4><p class="psub" style="margin:0">Open a page above while logged in, then click <b>✏️ Edit site</b> at the bottom. Click any text to type, click a picture to change it, and use <b>🎨 Design</b> for colours, fonts, links and section order. Press <b>Save</b> and everyone sees it.</p></div>';
   }
 
   /* ================= ANNOUNCEMENTS ================= */
@@ -640,7 +979,7 @@
   R.logs = async v => {
     await names();
     const PS = 50; let rows = [], done = false;
-    v.innerHTML = '<h2 class="pt">Audit logs</h2><p class="psub">Every change to roles, people, blocks and site content, recorded automatically.</p><div class="toolbar"><input class="input" id="lsearch" placeholder="Filter by person or action…"></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>When</th><th>Who</th><th>What</th></tr></thead><tbody id="ltb"></tbody></table></div><div class="toolbar" style="margin-top:16px;justify-content:center"><button class="btn btn-ghost btn-sm" id="lmore">Load more</button></div>';
+    v.innerHTML = '<h2 class="pt">Audit logs</h2><p class="psub">Every change to roles, people, content, packs and subscriptions, recorded automatically.</p><div class="toolbar"><input class="input" id="lsearch" placeholder="Filter by person or action…"></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>When</th><th>Who</th><th>What</th></tr></thead><tbody id="ltb"></tbody></table></div><div class="toolbar" style="margin-top:16px;justify-content:center"><button class="btn btn-ghost btn-sm" id="lmore">Load more</button></div>';
     const draw = () => {
       const q = ($('#lsearch').value || '').toLowerCase();
       $('#ltb').innerHTML = rows.filter(l => !q || (l.actor_email || '').toLowerCase().includes(q) || describe(l).toLowerCase().includes(q)).map(l =>
