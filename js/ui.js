@@ -9,7 +9,7 @@
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
   ));
 
-  /* ---------- Ready signal (fires after the intro curtain lifts) ---------- */
+  /* ---------- Ready signal (fires after the intro / curtain lifts) ---------- */
   UI.onReady = fn => { if (window.__holoReady) fn(); else document.addEventListener('holo:ready', fn, { once: true }); };
   function ready() {
     if (window.__holoReady) return;
@@ -108,6 +108,7 @@
 
   function arrive() {
     try { sessionStorage.setItem('holo-seen', '1'); } catch (e) {}
+    if (root.classList.contains('intro-on')) return;       // the intro will call playReveal()
     if (!root.classList.contains('vt-in')) { ready(); return; }
     setTimeout(() => {
       root.classList.add('vt-out');
@@ -116,6 +117,18 @@
       setTimeout(() => root.classList.remove('vt-out'), 1100);
     }, 650);
   }
+
+  /* After the brain intro: strips rise over the white screen, then lift away to show the page */
+  UI.playReveal = () => {
+    try { sessionStorage.setItem('holo-intro', '1'); } catch (e) {}
+    root.classList.add('vt-cover');
+    setTimeout(() => {
+      root.classList.remove('intro-on', 'vt-cover');
+      root.classList.add('vt-out');
+      setTimeout(ready, 450);
+      setTimeout(() => root.classList.remove('vt-out'), 1100);
+    }, 900);
+  };
 
   UI.go = url => {
     if (reduce) { location.href = url; return; }
