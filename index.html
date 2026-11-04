@@ -19,6 +19,7 @@
   <script src="/js/boot.js"></script>
   <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/landing.css">
+  <link rel="stylesheet" href="/css/blocks.css">
   <link rel="stylesheet" href="/css/support.css">
 </head>
 <body>
@@ -37,6 +38,7 @@
           <button class="avatar-btn" id="account-btn" aria-label="Account"><span id="account-initial">?</span></button>
           <div class="account-menu" id="account-menu">
             <div class="account-name" id="account-name"></div>
+            <a href="/dashboard">My dashboard</a>
             <a href="/admin" data-staff hidden>Admin dashboard</a>
             <button data-logout>Log out</button>
           </div>
@@ -54,12 +56,13 @@
         <div class="row" style="--i:1"><a href="#about" data-nav="about"><i>02</i><span data-t="menu.about">About</span></a></div>
         <div class="row" style="--i:2" data-guest><a href="/login"><i>03</i><span data-t="menu.login">Log in</span></a></div>
         <div class="row" style="--i:3" data-guest><a href="/signup"><i>04</i><span data-t="menu.signup">Sign up</span></a></div>
-        <div class="row" style="--i:2" data-user data-staff hidden><a href="/admin"><i>03</i><span data-t="menu.admin">Admin</span></a></div>
-        <div class="row" style="--i:3" data-user hidden><button data-logout><i>04</i><span data-t="menu.logout">Log out</span></button></div>
+        <div class="row" style="--i:2" data-user hidden><a href="/dashboard"><i>03</i><span data-t="menu.dashboard">Dashboard</span></a></div>
+        <div class="row" style="--i:3" data-user data-staff hidden><a href="/admin"><i>04</i><span data-t="menu.admin">Admin</span></a></div>
+        <div class="row" style="--i:4" data-user hidden><button data-logout><i>05</i><span data-t="menu.logout">Log out</span></button></div>
       </nav>
       <div class="menu-side">
-        <a href="https://www.instagram.com/holomatrix_consulting/" target="_blank" rel="noopener noreferrer" data-link="social.instagram" data-label="Instagram (menu + footer)">Instagram</a>
-        <a href="https://www.linkedin.com/company/holomatrixconsulting" target="_blank" rel="noopener noreferrer" data-link="social.linkedin" data-label="LinkedIn (menu + footer)">LinkedIn</a>
+        <a href="https://www.instagram.com/holomatrix_consulting/" target="_blank" rel="noopener noreferrer" data-link="social.instagram" data-label="Instagram (menu + footer)"><span>Instagram</span></a>
+        <a href="https://www.linkedin.com/company/holomatrixconsulting" target="_blank" rel="noopener noreferrer" data-link="social.linkedin" data-label="LinkedIn (menu + footer)"><span>LinkedIn</span></a>
       </div>
     </div>
   </div>
@@ -112,7 +115,7 @@
           </div>
         </div>
 
-        <!-- Team (filled from the staff_members table, hidden when empty) -->
+        <!-- Team (from the staff_members table, hidden when empty) -->
         <div class="team" id="team" hidden>
           <div class="reveal">
             <p class="kicker" data-t="team.kicker">Team</p>
@@ -121,6 +124,11 @@
           <div class="team-grid" id="team-grid"></div>
         </div>
       </div>
+    </section>
+
+    <!-- ===== CUSTOM BLOCKS (made in Admin → Website → Blocks) ===== -->
+    <section class="blocks" id="blocks" data-section="blocks" data-label="Custom blocks">
+      <div class="wide" id="blocks-list"></div>
     </section>
   </main>
 
@@ -135,8 +143,8 @@
           <a href="/terms"><span data-t="footer.terms">Terms of Service</span></a>
         </div>
         <div class="socials">
-          <a href="https://www.instagram.com/holomatrix_consulting/" target="_blank" rel="noopener noreferrer" data-link="social.instagram">Instagram</a>
-          <a href="https://www.linkedin.com/company/holomatrixconsulting" target="_blank" rel="noopener noreferrer" data-link="social.linkedin">LinkedIn</a>
+          <a href="https://www.instagram.com/holomatrix_consulting/" target="_blank" rel="noopener noreferrer" data-link="social.instagram"><span>Instagram</span></a>
+          <a href="https://www.linkedin.com/company/holomatrixconsulting" target="_blank" rel="noopener noreferrer" data-link="social.linkedin"><span>LinkedIn</span></a>
         </div>
       </div>
     </div>
@@ -146,6 +154,8 @@
   <script src="/js/config.js"></script>
   <script src="/js/supabase-client.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/icons.js"></script>
+  <script src="/js/blocks.js"></script>
   <script src="/js/site.js"></script>
   <script src="/js/support.js"></script>
   <script src="/js/landing.js"></script>
