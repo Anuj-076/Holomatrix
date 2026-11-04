@@ -11,25 +11,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="/js/boot.js"></script>
   <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/header.css">
   <link rel="stylesheet" href="/css/pages.css">
-  <link rel="stylesheet" href="/css/support.css">
+  <link rel="stylesheet" href="/css/site-pages.css">
 </head>
 <body>
-  <div class="wide">
-    <header class="pg-head">
-      <a href="/" class="brand">
-        <span class="img-slot logo-slot" data-img="brand.logo"><img src="/logo.jpg" alt="Holomatrix logo"></span>
-        <span data-t="brand.name">Holomatrix</span>
-      </a>
-      <div class="pg-actions">
-        <button class="btn btn-ghost btn-icon" data-theme-toggle aria-label="Toggle theme">🌙</button>
-        <a class="btn btn-ghost btn-sm" href="/">Home</a>
-      </div>
-    </header>
-
-    <main class="page">
-      <h1 data-t="legal.terms.title">Terms of Service</h1>
-      <div class="legal-body" data-t="legal.terms.body" data-multiline>Using this website
+  <div id="site-header"></div>
+  <main class="pg"><div class="wide"><div class="page" style="padding-top:20px">
+    <h1 data-t="legal.terms.title">Terms of Service</h1>
+    <div class="legal-body" data-t="legal.terms.body" data-multiline>Using this website
 By creating an account or using this website you agree to these terms.
 
 Your account
@@ -38,28 +28,30 @@ You are responsible for keeping your password secure and for activity on your ac
 Acceptable use
 Do not misuse the website, try to access other people's data, disrupt the service, or use it for anything unlawful.
 
+Clients and payments
+Anyone can create a client profile and anyone can hire a client. Any payment or agreement is strictly between the people involved. Holomatrix is not responsible for any payment, agreement, dispute or loss, including if someone is scammed. Choosing trusted people and checking them carefully is your own responsibility.
+
+Subscriptions
+Some features, such as Researches and becoming a client, are available to subscribers. Packs and prices may change.
+
 Changes
 We may update the website and these terms at any time. Continuing to use the website means you accept the updated terms.
 
 Suspension
-We may suspend or remove accounts that break these terms.
+We may suspend or remove accounts and client profiles that break these terms.
 
 Contact
-You can reach us through the support chat on this website.</div>
-    </main>
-
-    <footer class="pg-foot">
-      <span>© <span id="year"></span> <span data-t="brand.name">Holomatrix</span></span>
-      <span><a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a></span>
-    </footer>
-  </div>
+You can reach us through the Contact us page.</div>
+  </div></div></main>
+  <div id="site-footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/config.js"></script>
   <script src="/js/supabase-client.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/icons.js"></script>
+  <script src="/js/common.js"></script>
   <script src="/js/site.js"></script>
-  <script src="/js/support.js"></script>
-  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  <script src="/js/header.js"></script>
 </body>
 </html>
