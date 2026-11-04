@@ -1,4 +1,4 @@
-/* Landing page behaviour: menu, account, particle hero, scroll effects, team */
+/* Landing page behaviour: menu, account, particle hero, scroll effects, team, custom blocks */
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
@@ -6,6 +6,18 @@
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   let scrubWords = [];
+
+  /* ---------- Brand icons next to every editable link ---------- */
+  function decorate(root) {
+    (root || document).querySelectorAll('a[data-link]').forEach(a => {
+      const old = a.querySelector(':scope > .ico');
+      if (old) old.remove();
+      const s = document.createElement('span');
+      s.className = 'ico';
+      s.innerHTML = HoloIcons.svg(HoloIcons.detect(a.getAttribute('href')));
+      a.prepend(s);
+    });
+  }
 
   /* ---------- Full-screen menu ---------- */
   function initMenu() {
@@ -135,7 +147,6 @@
   function onScroll() {
     const y = scrollY, vh = innerHeight;
     $('nav').classList.toggle('scrolled', y > 30);
-
     const inner = $('hero-inner');
     if (inner && y < vh * 1.2 && !document.body.classList.contains('editing')) {
       const p = clamp(y / vh, 0, 1);
@@ -153,7 +164,16 @@
   let raf = 0;
   const onScrollRaf = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; onScroll(); }); };
 
-  /* ---------- Team (from the staff_members table) ---------- */
+  /* ---------- Team (staff_members table) ---------- */
+  function staffLinks(m) {
+    let l = Array.isArray(m.links) ? m.links.filter(x => x && x.url) : [];
+    if (!l.length) {
+      if (m.instagram) l.push({ url: m.instagram });
+      if (m.linkedin) l.push({ url: m.linkedin });
+    }
+    return l;
+  }
+
   async function renderTeam() {
     const box = $('team'), grid = $('team-grid');
     try {
@@ -165,9 +185,10 @@
         const photo = m.photo_url && /^https:\/\//.test(m.photo_url)
           ? '<img src="' + esc(m.photo_url) + '" alt="' + esc(m.name) + '" loading="lazy">'
           : '<span class="initials">' + ini + '</span>';
-        const links = [];
-        if (m.instagram) links.push('<a href="' + esc(Site.safeUrl(m.instagram)) + '" target="_blank" rel="noopener noreferrer">Instagram</a>');
-        if (m.linkedin) links.push('<a href="' + esc(Site.safeUrl(m.linkedin)) + '" target="_blank" rel="noopener noreferrer">LinkedIn</a>');
+        const links = staffLinks(m).map(l => {
+          const name = HoloIcons.forItem(l);
+          return '<a href="' + esc(Site.safeUrl(l.url)) + '" target="_blank" rel="noopener noreferrer" title="' + esc(l.label || HoloIcons.label(name)) + '" aria-label="' + esc(l.label || HoloIcons.label(name)) + '"><span class="ico">' + HoloIcons.svg(name) + '</span></a>';
+        });
         const bio = (m.bio || links.length)
           ? '<div class="staff-bio">' + (m.bio ? '<p>' + esc(m.bio) + '</p>' : '') + (links.length ? '<div class="staff-links">' + links.join('') + '</div>' : '') + '</div>'
           : '';
@@ -180,15 +201,30 @@
     } catch (e) { /* team stays hidden */ }
   }
 
+  /* ---------- Custom blocks (site_blocks table) ---------- */
+  async function renderBlocks() {
+    const sec = $('blocks'), list = $('blocks-list');
+    try {
+      const { data, error } = await sb.from('site_blocks').select('*')
+        .eq('visible', true).order('position', { ascending: true }).order('created_at', { ascending: true });
+      if (error || !data || !data.length) return;
+      HoloBlocks.ensureFonts(data);
+      list.innerHTML = data.map(b => HoloBlocks.render(b)).join('');
+      sec.classList.add('has');
+      UI.observe(sec);
+    } catch (e) { /* blocks stay hidden */ }
+  }
+
   /* ---------- Init ---------- */
   document.addEventListener('DOMContentLoaded', () => {
     initMenu();
     initAccount();
     heroCanvas();
+    decorate();
     $('year').textContent = new Date().getFullYear();
     addEventListener('scroll', onScrollRaf, { passive: true });
     addEventListener('resize', onScrollRaf);
     onScroll();
-    Site.ready.then(() => { splitScrub(); renderTeam(); UI.observe(); onScroll(); });
+    Site.ready.then(() => { decorate(); splitScrub(); renderTeam(); renderBlocks(); UI.observe(); onScroll(); });
   });
 })();
