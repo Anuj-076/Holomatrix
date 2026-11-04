@@ -1,4 +1,4 @@
-/* Landing page behaviour: menu, account, particle hero, scroll effects, team, custom blocks */
+/* Landing page: particle hero, scroll effects, team, custom blocks (the top bar lives in header.js) */
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
@@ -17,46 +17,6 @@
       s.innerHTML = HoloIcons.svg(HoloIcons.detect(a.getAttribute('href')));
       a.prepend(s);
     });
-  }
-
-  /* ---------- Full-screen menu ---------- */
-  function initMenu() {
-    const btn = $('menu-btn'), menu = $('menu');
-    const set = open => {
-      menu.classList.toggle('open', open);
-      btn.classList.toggle('open', open);
-      btn.setAttribute('aria-expanded', open);
-      menu.setAttribute('aria-hidden', !open);
-      document.body.classList.toggle('no-scroll', open);
-    };
-    btn.addEventListener('click', () => set(!menu.classList.contains('open')));
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') set(false); });
-    menu.addEventListener('click', e => { if (e.target.closest('a, button')) set(false); });
-  }
-
-  /* ---------- Account state ---------- */
-  async function initAccount() {
-    const acc = $('account'), btn = $('account-btn');
-    btn.addEventListener('click', e => { e.stopPropagation(); acc.classList.toggle('open'); });
-    document.addEventListener('click', e => { if (!acc.contains(e.target)) acc.classList.remove('open'); });
-    document.querySelectorAll('[data-logout]').forEach(b => b.addEventListener('click', () => Auth.signOut()));
-
-    const a = await Site.accessReady;
-    if (!a) return;
-    document.querySelectorAll('[data-guest]').forEach(el => { el.hidden = true; });
-    document.querySelectorAll('[data-user]').forEach(el => { el.hidden = false; });
-    document.querySelectorAll('[data-staff]').forEach(el => { el.hidden = !a.isStaff; });
-
-    const u = a.user, md = u.user_metadata || {};
-    const name = md.full_name || md.name || u.email || '';
-    $('account-name').textContent = name;
-    $('account-initial').textContent = (name || '?').trim().charAt(0).toUpperCase();
-    const pic = md.avatar_url || md.picture;
-    if (pic && /^https:\/\//.test(pic)) {
-      const im = document.createElement('img');
-      im.src = pic; im.alt = ''; im.referrerPolicy = 'no-referrer';
-      btn.appendChild(im); $('account-initial').hidden = true;
-    }
   }
 
   /* ---------- Particle hero canvas ---------- */
@@ -146,7 +106,6 @@
 
   function onScroll() {
     const y = scrollY, vh = innerHeight;
-    $('nav').classList.toggle('scrolled', y > 30);
     const inner = $('hero-inner');
     if (inner && y < vh * 1.2 && !document.body.classList.contains('editing')) {
       const p = clamp(y / vh, 0, 1);
@@ -217,8 +176,6 @@
 
   /* ---------- Init ---------- */
   document.addEventListener('DOMContentLoaded', () => {
-    initMenu();
-    initAccount();
     heroCanvas();
     decorate();
     $('year').textContent = new Date().getFullYear();
