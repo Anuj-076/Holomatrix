@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Holomatrix</title>
+  <link rel="icon" type="image/jpeg" href="/logo.jpg">
+  <link rel="apple-touch-icon" href="/logo.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="/js/boot.js"></script>
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/header.css">
+  <link rel="stylesheet" href="/css/site-pages.css">
+</head>
+<body>
+  <div id="site-header"></div>
+  <main class="pg"><div class="wide">
+    <h1 class="pg-title" data-t="funds.title">Funds</h1>
+    <div class="cat-tabs" id="tabs"></div>
+
+    <section id="subscribe" hidden>
+      <p class="pg-sub" data-t="funds.sub" data-multiline data-ph="Subscription intro (optional)"></p>
+      <div id="cur"></div>
+      <div class="plans" id="plans"><div class="empty">Loading…</div></div>
+    </section>
+
+    <section id="donate" hidden class="donate">
+      <h2 style="font-size:2rem;margin-bottom:14px" data-t="funds.donate.title">Donate</h2>
+      <p class="note" data-t="funds.donate.note" data-multiline>We need funds to carry out research and keep Holomatrix running. Every contribution helps us explore more and share what we discover.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-primary" data-pay="intl"><span data-t="funds.donate.intl">Donate internationally</span></button>
+        <button class="btn btn-ghost" data-pay="upi"><span data-t="funds.donate.upi">Donate with UPI (India)</span></button>
+      </div>
+    </section>
+  </div></main>
+  <div id="site-footer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/icons.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/site.js"></script>
+  <script src="/js/header.js"></script>
+  <script src="/js/funds.js"></script>
+</body>
+</html>
