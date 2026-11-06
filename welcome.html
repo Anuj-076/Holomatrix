@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Holomatrix</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/jpeg" href="/logo.jpg">
+  <link rel="apple-touch-icon" href="/logo.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="/js/boot.js"></script>
+  <link rel="stylesheet" href="/css/theme.css">
+  <style>
+    .wl { min-height: 100vh; display: grid; place-items: center; padding: 24px; position: relative; overflow: hidden; }
+    .wl-in { position: relative; z-index: 1; width: min(520px, 100%); display: grid; gap: 18px; justify-items: center; }
+    .wl-logo { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+    .wl-card { width: 100%; padding: 30px; }
+    .wl-card h1 { font-size: 1.8rem; margin-bottom: 6px; }
+    .wl-card .sub { color: var(--muted); margin-bottom: 22px; }
+    .wl-av { display: flex; gap: 16px; align-items: center; margin-bottom: 22px; }
+    .wl-ph { width: 84px; height: 84px; border-radius: 50%; overflow: hidden; background: var(--accent-grad); color: var(--on-accent); display: grid; place-items: center; font-weight: 700; font-size: 1.8rem; flex: none; }
+    .wl-ph img { width: 100%; height: 100%; object-fit: cover; }
+    .st { font-size: 0.82rem; min-height: 1.2em; }
+    .st.ok { color: var(--success); } .st.bad { color: var(--danger); } .st.wait { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wl">
+    <div class="orb o1"></div><div class="orb o2"></div>
+    <div class="wl-in">
+      <img class="wl-logo" src="/logo.jpg" alt="Holomatrix">
+      <div class="card wl-card" id="wl">Loading…</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/media.js"></script>
+  <script src="/js/welcome.js"></script>
+</body>
+</html>
