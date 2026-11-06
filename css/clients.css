@@ -1,0 +1,32 @@
+/* Find a client / Become a client */
+.cl-empty { min-height: 52vh; display: grid; place-items: center; text-align: center; padding: 30px; }
+.cl-empty > div { max-width: 460px; display: grid; gap: 12px; justify-items: center; }
+.ce-ico { width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center; font-size: 2.5rem; background: color-mix(in srgb, var(--accent) 14%, transparent); border: 1px solid var(--border); box-shadow: 0 0 70px color-mix(in srgb, var(--accent) 28%, transparent); }
+.cl-empty h3 { font-size: 1.6rem; }
+.cl-empty p { color: var(--muted); }
+.cl .need { font-size: 1.2rem; line-height: 1.3; }
+.cl .by { color: var(--muted); font-size: 0.85rem; }
+.cl-prob { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.cl-full .cl-prob { display: block; -webkit-line-clamp: unset; }
+.cl-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.bd { padding: 4px 11px; border-radius: 999px; font-size: 0.76rem; font-weight: 600; background: var(--surface-2); border: 1px solid var(--border); }
+.bd.u-urgent { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 50%, transparent); }
+.bd.u-week { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
+.cl-foot { color: var(--muted); font-size: 0.8rem; }
+.cl-gate { max-width: 640px; }
+
+.rq { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding: 18px 22px; border-radius: 18px; border: 1px solid var(--border); margin-bottom: 22px; }
+.rq.open { border-color: color-mix(in srgb, var(--success) 55%, transparent); background: color-mix(in srgb, var(--success) 8%, transparent); }
+.rq.closed { background: var(--surface); }
+.rq small { display: block; color: var(--muted); margin-top: 3px; max-width: 520px; }
+.fsec { border: 1px solid var(--border); border-radius: 20px; padding: 22px; background: var(--surface); margin-bottom: 18px; }
+.fsec h3 { margin: 0 0 4px; font-size: 1.15rem; }
+.fsec > .hint { margin: 0 0 14px; }
+.form .fsec .field:last-child { margin-bottom: 0; }
+
+/* chat notes */
+.mx-top { padding: 10px 12px 0; display: grid; gap: 8px; }
+.mx-safe { font-size: 0.76rem; color: var(--muted); padding: 8px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
+.mx-note { padding: 12px 14px; border-radius: 14px; font-size: 0.85rem; background: color-mix(in srgb, var(--warn) 12%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent); display: grid; gap: 8px; }
+.mx-note.ok { background: color-mix(in srgb, var(--success) 12%, transparent); border-color: color-mix(in srgb, var(--success) 45%, transparent); }
+.mx-note button { justify-self: start; padding: 7px 14px; border-radius: 999px; background: var(--accent-grad); color: var(--on-accent); font-weight: 600; font-size: 0.8rem; }
