@@ -1,11 +1,15 @@
-/* Shared helpers, lists, default menu and path-based tabs */
+/* Shared helpers, lists, default menu, client cards and path-based tabs */
 (function () {
   'use strict';
   const C = {};
 
   C.NEWS_CATS = [['all', 'All articles'], ['physics', 'Physics'], ['astronomy', 'Astronomy'], ['biology', 'Biology'], ['chemistry', 'Chemistry'], ['technology', 'Technology'], ['holomatrix', 'Holomatrix'], ['other', 'Other']];
   C.RES_CATS = [['all', 'All researches'], ['physics', 'Physics'], ['chemistry', 'Chemistry'], ['biology', 'Biology'], ['astronomy', 'Astronomy']];
-  C.FIELDS = [['physics', 'Physics'], ['biology', 'Biology'], ['chemistry', 'Chemistry'], ['astronomy', 'Astronomy'], ['technology', 'Technology']];
+  C.FIELDS = [['physics', 'Physics'], ['biology', 'Biology'], ['chemistry', 'Chemistry'], ['astronomy', 'Astronomy'], ['technology', 'Technology'], ['other', 'Other']];
+  C.HELP_TYPES = [['tutoring', 'Tutoring / teaching'], ['research', 'Research guidance'], ['project', 'Project help'], ['review', 'Paper / report review'], ['tech', 'Technical / software help'], ['advice', 'Consultation / advice'], ['mentor', 'Mentorship'], ['other', 'Other']];
+  C.URGENCY = [['flexible', 'Flexible'], ['month', 'Within a month'], ['week', 'Within a week'], ['urgent', 'Urgent (1–2 days)']];
+  C.BUDGET = [['paid', 'Paid'], ['free', 'Free / volunteer'], ['discuss', 'Open to discuss']];
+  C.MODES = [['online', 'Online'], ['inperson', 'In person'], ['either', 'Online or in person']];
   C.QUALS = ['High school', 'Diploma', 'Associate degree', 'B.Sc', 'B.Tech / B.E.', 'B.A.', 'B.Com', 'BBA', 'B.Pharm', 'MBBS', 'LL.B', 'M.Sc', 'M.Tech / M.E.', 'M.A.', 'M.Com', 'MBA', 'M.Phil', 'Ph.D', 'Postdoctoral researcher', 'Professor', 'Certified professional', 'Self-taught'];
   C.GROUPS = ['Scientists', 'Management', 'Executive team'];
 
@@ -14,7 +18,7 @@
     { id: 'news', label: 'News', href: '/news/all', visible: true, children: sub('/news', C.NEWS_CATS) },
     { id: 'research', label: 'Researches', href: '/research/all', premium: true, visible: true, children: sub('/research', C.RES_CATS) },
     { id: 'about', label: 'About us', href: '/about/holomatrix', visible: true, children: [{ label: 'Holomatrix', href: '/about/holomatrix' }, { label: 'Staff team', href: '/about/staff-team' }] },
-    { id: 'clients', label: 'Client', href: '/clients/hire-a-client', visible: true, children: [{ label: 'Hire a client', href: '/clients/hire-a-client' }, { label: 'Become a client', href: '/clients/become-a-client', premium: true }] },
+    { id: 'clients', label: 'Client', href: '/clients/find-a-client', visible: true, children: [{ label: 'Find a client', href: '/clients/find-a-client', premium: true }, { label: 'Become a client', href: '/clients/become-a-client' }] },
     { id: 'funds', label: 'Funds', href: '/funds/subscribe', visible: true, children: [{ label: 'Subscribe', href: '/funds/subscribe' }, { label: 'Donate', href: '/funds/donate' }] },
     { id: 'contact', label: 'Contact us', href: '/contact/ai-support', visible: true, children: [{ label: 'AI support', href: '/contact/ai-support' }, { label: 'Staff support', href: '/contact/staff-support' }] }
   ];
@@ -31,28 +35,34 @@
     try { const x = new URL(u); return /^https?:$/.test(x.protocol) && x.hostname.includes('.') ? x.href : ''; } catch (e) { return ''; }
   };
 
-  /* Client card (list + full profile page) */
+  /* A client = a person who needs help. Card for lists and for the full request page. */
   C.clientCard = (c, meId, full) => {
-    const esc = UI.esc, ini = esc((c.display_name || '?').trim().charAt(0).toUpperCase());
+    const esc = UI.esc, L = (l, id) => esc(C.catLabel(l, id));
     const social = [{ url: c.linkedin }].concat(Array.isArray(c.socials) ? c.socials : []).filter(s => s && s.url);
     const links = social.map(s => { const n = HoloIcons.forItem(s); return '<a href="' + esc(Site.safeUrl(s.url)) + '" target="_blank" rel="noopener noreferrer" aria-label="' + esc(s.label || HoloIcons.label(n)) + '"><span class="ico">' + HoloIcons.svg(n) + '</span></a>'; }).join('');
     const quals = (c.qualifications || []).concat(c.qualification_other ? [c.qualification_other] : []);
-    const mine = c.user_id === meId;
-    return '<article class="cl' + (full ? ' cl-full' : ' reveal') + '"><div class="cl-top"><div class="cl-av">' + (c.photo_url && /^https:\/\//.test(c.photo_url) ? '<img src="' + esc(c.photo_url) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : ini) + '</div>' +
-      '<div><h4>' + esc(c.display_name) + '</h4>' + (c.headline ? '<small>' + esc(c.headline) + '</small>' : '') + '</div></div>' +
-      ((c.fields || []).length ? '<div class="tags">' + c.fields.map(f => '<span class="tag2 f">' + esc(C.catLabel(C.FIELDS, f)) + '</span>').join('') + '</div>' : '') +
-      (quals.length ? '<div class="tags">' + quals.map(q => '<span class="tag2">🎓 ' + esc(q) + '</span>').join('') + '</div>' : '') +
-      (c.experience_years ? '<small style="color:var(--muted)">' + c.experience_years + ' yrs experience</small>' : '') +
-      (c.bio ? '<p>' + esc(c.bio) + '</p>' : '') + (c.extra ? '<p>' + esc(c.extra) + '</p>' : '') +
-      '<div class="cl-links">' + links +
-      (c.portfolio_url ? '<a href="' + esc(Site.safeUrl(c.portfolio_url)) + '" target="_blank" rel="noopener noreferrer"><span class="ico">' + HoloIcons.svg('website') + '</span>Portfolio</a>' : '') +
-      (c.contact_email ? '<a href="mailto:' + esc(c.contact_email) + '"><span class="ico">' + HoloIcons.svg('email') + '</span>' + esc(c.contact_email) + '</a>' : '') + '</div>' +
-      '<div class="cl-actions">' + (mine ? '<a class="btn btn-ghost btn-sm" href="/clients/become-a-client">Edit my profile</a>' : '<button class="btn btn-primary btn-sm" data-chat="' + c.user_id + '">💬 Chat</button>') +
-      (full || !c.uid ? '' : '<a class="btn btn-ghost btn-sm" href="/clients/hire-a-client/' + c.uid + '">View profile</a>') + '</div></article>';
+    const meta = [];
+    if (c.urgency) meta.push('<span class="bd u-' + esc(c.urgency) + '">⏱ ' + L(C.URGENCY, c.urgency) + '</span>');
+    if (c.budget_type) meta.push('<span class="bd">💰 ' + L(C.BUDGET, c.budget_type) + (c.budget_text ? ' · ' + esc(c.budget_text) : '') + '</span>');
+    if (c.mode) meta.push('<span class="bd">📍 ' + L(C.MODES, c.mode) + (c.location ? ' · ' + esc(c.location) : '') + '</span>');
+    if (c.languages) meta.push('<span class="bd">🗣 ' + esc(c.languages) + '</span>');
+    const mine = c.user_id === meId, n = c.helpers_count || 0;
+    return '<article class="cl' + (full ? ' cl-full' : ' reveal') + '"><div class="cl-top"><div class="cl-av">' + (c.photo_url && /^https:\/\//.test(c.photo_url) ? '<img src="' + esc(c.photo_url) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : esc((c.display_name || '?').trim().charAt(0).toUpperCase())) + '</div>' +
+      '<div><small class="by">Request by</small><h4>' + esc(c.display_name) + '</h4><small class="by">' + C.date(c.created_at) + '</small></div></div>' +
+      '<h4 class="need">' + esc(c.headline || 'Needs help') + '</h4>' +
+      '<div class="tags">' + (c.fields || []).map(f => '<span class="tag2 f">' + L(C.FIELDS, f) + '</span>').join('') + (c.help_types || []).map(h => '<span class="tag2">' + L(C.HELP_TYPES, h) + '</span>').join('') + '</div>' +
+      (meta.length ? '<div class="cl-meta">' + meta.join('') + '</div>' : '') +
+      (c.bio ? '<p class="cl-prob">' + esc(c.bio) + '</p>' : '') +
+      (quals.length ? '<div class="tags"><small class="by">Preferred helper:</small>' + quals.map(q => '<span class="tag2">🎓 ' + esc(q) + '</span>').join('') + '</div>' : '') +
+      (full && c.extra ? '<p>' + esc(c.extra) + '</p>' : '') +
+      (links ? '<div class="cl-links">' + links + '</div>' : '') +
+      (n ? '<div class="cl-foot">💬 ' + n + ' helper' + (n > 1 ? 's' : '') + ' already talking to this person</div>' : '') +
+      '<div class="cl-actions">' + (mine ? '<a class="btn btn-ghost btn-sm" href="/clients/become-a-client">Manage my request</a>' : '<button class="btn btn-primary btn-sm" data-chat="' + c.user_id + '">💬 Offer help</button>') +
+      (full || !c.uid ? '' : '<a class="btn btn-ghost btn-sm" href="/clients/find-a-client/' + c.uid + '">View request</a>') + '</div></article>';
   };
 
   /* Tabs driven by the address: /news/physics, /clients/become-a-client ... (no page reload) */
-  const SLUG = { hire: 'hire-a-client', become: 'become-a-client', staff: 'staff-team' };
+  const SLUG = { find: 'find-a-client', become: 'become-a-client', staff: 'staff-team' };
   C.tabs = function (o) {
     const parts = () => location.pathname.split('/').filter(Boolean);
     const base = '/' + (parts()[0] || ''), ids = o.items.map(i => i[0]), seg = id => SLUG[id] || id;
