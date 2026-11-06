@@ -13,13 +13,23 @@
   <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/header.css">
   <link rel="stylesheet" href="/css/site-pages.css">
+  <link rel="stylesheet" href="/css/pages.css">
+  <link rel="stylesheet" href="/css/extras.css">
 </head>
 <body>
   <div id="site-header"></div>
   <main class="pg"><div class="wide">
     <h1 class="pg-title" data-t="contact.title">Contact us</h1>
     <p class="pg-sub" data-t="contact.sub" data-multiline data-ph="Short intro (optional)"></p>
+    <div class="cat-tabs" id="tabs"></div>
     <div id="ct"><div class="empty">Loading…</div></div>
+
+    <!-- Only people who can edit the website see this. The AI reads it when answering. -->
+    <section class="know" data-editor hidden>
+      <h3>AI knowledge (only admins see this)</h3>
+      <p class="hint">Click <b>✏️ Edit site</b>, then click the box below and type facts about Holomatrix for the AI. Everything written here is public, so never add passwords or private details.</p>
+      <div class="legal-body" data-t="ai.knowledge" data-multiline data-ph="Write Holomatrix information for the AI here…"></div>
+    </section>
   </div></main>
   <div id="site-footer"></div>
 
