@@ -8,24 +8,22 @@
   <meta property="og:title" content="Holomatrix">
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#05070d">
-
   <link rel="icon" type="image/jpeg" href="/logo.jpg">
   <link rel="apple-touch-icon" href="/logo.jpg">
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-
   <script src="/js/boot.js"></script>
   <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/header.css">
   <link rel="stylesheet" href="/css/landing.css">
+  <link rel="stylesheet" href="/css/site-pages.css">
   <link rel="stylesheet" href="/css/blocks.css">
+  <link rel="stylesheet" href="/css/extras.css">
   <link rel="stylesheet" href="/css/intro.css">
 </head>
 <body data-hdr="over">
 
-  <!-- ===== BRAIN INTRO (plays once per visit) ===== -->
   <div id="intro" role="presentation">
     <canvas id="intro-cv"></canvas>
     <div class="dim"></div>
@@ -37,7 +35,7 @@
   <div id="site-header"></div>
 
   <main>
-    <!-- ===== HERO ===== -->
+    <!-- HERO -->
     <section class="hero" id="home" data-section="hero" data-label="Hero">
       <canvas id="hero-canvas" aria-hidden="true"></canvas>
       <div class="hero-shade"></div>
@@ -59,7 +57,7 @@
       <a class="scroll-cue" href="#about"><span data-t="hero.scroll">Scroll</span><i></i></a>
     </section>
 
-    <!-- ===== ABOUT ===== -->
+    <!-- ABOUT: statement, Founder & CEO, team -->
     <section class="sheet" id="about" data-section="about" data-label="About">
       <div class="wide">
         <div class="reveal">
@@ -68,38 +66,94 @@
         </div>
 
         <div class="owner" id="owner">
-          <div class="owner-media img-slot reveal-clip" data-img="owner.photo" data-alt="Amal Pushp">
+          <div class="owner-media img-slot reveal" data-img="owner.photo" data-alt="Amal Pushp">
             <span class="initials" data-t="owner.initials">AP</span>
           </div>
           <div class="reveal">
-            <p class="kicker" data-t="owner.label">Owner</p>
+            <p class="kicker" data-t="owner.label">Founder &amp; CEO</p>
             <h3 class="owner-name" data-t="owner.name">Amal Pushp</h3>
             <p class="owner-title" data-t="owner.title" data-ph="Title / role"></p>
             <p class="owner-bio" data-t="owner.bio" data-multiline data-ph="Short bio"></p>
             <div class="owner-links">
-              <a class="pill" href="https://www.instagram.com/amalpjha2701/" target="_blank" rel="noopener noreferrer" data-link="owner.instagram" data-label="Owner: Instagram"><span data-t="owner.instagram.label">Instagram</span></a>
-              <a class="pill" href="https://linktr.ee/amalpushp" target="_blank" rel="noopener noreferrer" data-link="owner.linktree" data-label="Owner: Linktree"><span data-t="owner.linktree.label">Linktree</span></a>
+              <a class="pill" href="https://tr.ee/XFEbAXArQv" data-icon="linkedin" target="_blank" rel="noopener noreferrer" data-link="owner.linkedin" data-label="Founder: LinkedIn"><span data-t="owner.linkedin.label">LinkedIn</span></a>
+              <a class="pill" href="https://x.com/AmalPushp4" data-icon="x" target="_blank" rel="noopener noreferrer" data-link="owner.x" data-label="Founder: X"><span data-t="owner.x.label">X</span></a>
+              <a class="pill" href="https://www.instagram.com/amalpjha2701/" data-icon="instagram" target="_blank" rel="noopener noreferrer" data-link="owner.instagram" data-label="Founder: Instagram"><span data-t="owner.instagram.label">Instagram</span></a>
+              <a class="pill" href="https://linktr.ee/amalpushp" data-icon="linktree" target="_blank" rel="noopener noreferrer" data-link="owner.linktree" data-label="Founder: Linktree"><span data-t="owner.linktree.label">Linktree</span></a>
             </div>
           </div>
         </div>
 
         <div class="team" id="team" hidden>
-          <div class="reveal">
-            <p class="kicker" data-t="team.kicker">Team</p>
-            <h3 data-t="team.title" data-ph="Team heading"></h3>
+          <div class="pv-head reveal">
+            <div><p class="kicker" data-t="team.kicker">Staff team</p><h3 data-t="team.title" data-ph="Team heading"></h3></div>
+            <a class="pill" href="/about/staff-team"><span data-t="lp.more.team">View all</span></a>
           </div>
           <div class="team-grid" id="team-grid"></div>
         </div>
       </div>
     </section>
 
-    <!-- ===== CUSTOM BLOCKS (Admin → Website → Blocks) ===== -->
+    <!-- NEWS -->
+    <section class="pv" id="news" data-section="news" data-label="News" hidden>
+      <div class="wide">
+        <div class="pv-head reveal">
+          <div><p class="kicker" data-t="lp.news.kicker">News</p><h2 data-t="lp.news.title" data-ph="Heading"></h2></div>
+          <a class="pill" href="/news/all"><span data-t="lp.more.news">View all</span></a>
+        </div>
+        <div class="grid-cards" id="lp-news"></div>
+      </div>
+    </section>
+
+    <!-- RESEARCHES (titles only: full papers are premium) -->
+    <section class="pv" id="research" data-section="research" data-label="Researches" hidden>
+      <div class="wide">
+        <div class="pv-head reveal">
+          <div><p class="kicker" data-t="lp.res.kicker">Researches <em class="prem">★ Premium</em></p><h2 data-t="lp.res.title" data-ph="Heading"></h2></div>
+          <a class="pill" href="/research/all"><span data-t="lp.more.res">View all</span></a>
+        </div>
+        <div class="grid-cards" id="lp-research"></div>
+      </div>
+    </section>
+
+    <!-- CLIENTS -->
+    <section class="pv" id="clients" data-section="clients" data-label="Clients">
+      <div class="wide">
+        <div class="pv-head reveal"><div><p class="kicker" data-t="lp.cl.kicker">Client</p><h2 data-t="lp.cl.title" data-ph="Heading"></h2></div></div>
+        <div class="pv-tiles">
+          <a class="card pv-tile reveal" href="/clients/hire-a-client"><h3 data-t="lp.cl.hire">Hire a client</h3><span class="gradient-text">→</span></a>
+          <a class="card pv-tile reveal" href="/clients/become-a-client"><h3 data-t="lp.cl.become">Become a client</h3><em class="prem">★ Premium</em></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- FUNDS -->
+    <section class="pv" id="funds" data-section="funds" data-label="Funds">
+      <div class="wide">
+        <div class="pv-head reveal">
+          <div><p class="kicker" data-t="lp.funds.kicker">Funds</p><h2 data-t="lp.funds.title" data-ph="Heading"></h2></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="pill" href="/funds/subscribe"><span data-t="lp.funds.sub">Subscribe</span></a><a class="pill" href="/funds/donate"><span data-t="lp.funds.don">Donate</span></a></div>
+        </div>
+        <div class="plans" id="lp-plans"></div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="pv" id="contact" data-section="contact" data-label="Contact us">
+      <div class="wide">
+        <div class="pv-head reveal"><div><p class="kicker" data-t="lp.ct.kicker">Contact us</p><h2 data-t="lp.ct.title" data-ph="Heading"></h2></div></div>
+        <div class="pv-tiles">
+          <a class="card pv-tile reveal" href="/contact/ai-support"><h3 data-t="lp.ct.ai">AI support</h3><span class="gradient-text">→</span></a>
+          <a class="card pv-tile reveal" href="/contact/staff-support"><h3 data-t="lp.ct.staff">Staff support</h3><span class="gradient-text">→</span></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- CUSTOM BLOCKS (Admin → Website → Blocks) -->
     <section class="blocks" id="blocks" data-section="blocks" data-label="Custom blocks">
       <div class="wide" id="blocks-list"></div>
     </section>
   </main>
 
-  <!-- ===== FOOTER ===== -->
   <footer class="footer">
     <div class="wide">
       <div class="footer-word" data-t="brand.name">Holomatrix</div>
