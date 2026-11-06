@@ -1,8 +1,9 @@
-/* About us: /about/holomatrix and /about/staff-team (Scientists, Management, Executive team) */
+/* About us: /about/holomatrix (full Holomatrix story) and /about/staff-team */
 (function () {
   'use strict';
   const C = HoloCommon, esc = UI.esc;
   const sections = { holomatrix: document.getElementById('holomatrix'), staff: document.getElementById('staff') };
+  let target = location.hash.slice(1), rendered = false;     // e.g. #learn-more, #education, #model
 
   function card(m) {
     const ini = esc((m.name || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase());
@@ -27,10 +28,17 @@
     UI.observe(box);
   }
 
+  function showHolo() {
+    if (!rendered) { rendered = true; sections.holomatrix.innerHTML = HoloRender.aboutPage(); Site.applyAll(); }
+    UI.observe();
+    if (target) { const id = target; target = ''; setTimeout(() => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 500); }
+  }
+
   C.tabs({
     el: document.getElementById('tabs'), items: [['holomatrix', 'Holomatrix'], ['staff', 'Staff team']],
     onChange: id => {
       Object.keys(sections).forEach(k => { sections[k].hidden = k !== id; });
+      if (id === 'holomatrix') showHolo();
       if (id === 'staff' && !sections.staff.dataset.loaded) { sections.staff.dataset.loaded = 1; loadStaff(); }
       UI.observe();
     }
