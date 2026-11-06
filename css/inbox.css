@@ -11,9 +11,11 @@
   .mx-panel, .mx-panel.big { left: 8px; right: 8px; width: auto; bottom: 84px; height: calc(100vh - 170px); height: calc(100dvh - 170px); }
   .mx-exp { display: none; }
 }
-.mx-h { display: flex; align-items: center; gap: 6px; padding: 14px 12px 12px 18px; background: none; color: var(--text); font-family: var(--font-head); font-weight: 700; font-size: 1.08rem; border-bottom: 1px solid var(--border); }
-.mx-t { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mx-t .mx-av { width: 30px; height: 30px; font-size: 0.85rem; }
+.mx-h { display: flex; align-items: center; gap: 6px; padding: 12px 12px 12px 16px; background: none; color: var(--text); font-family: var(--font-head); font-weight: 700; font-size: 1.08rem; border-bottom: 1px solid var(--border); }
+.mx-h .mx-t { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; overflow: hidden; white-space: nowrap; }
+.mx-h .mx-t > span:not(.mx-av) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* the round photo in the chat header (this was stretched into an oval before) */
+.mx-h .mx-av { flex: none !important; width: 34px; height: 34px; min-width: 34px; max-width: 34px; border-radius: 50%; font-size: 0.9rem; }
 .mx-ib { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: var(--text); flex: none; transition: background 0.2s; }
 .mx-ib:hover { background: var(--surface-2); }
 .mx-ib svg { width: 19px; height: 19px; }
