@@ -3,6 +3,15 @@
   var d = document.documentElement;
   d.classList.add('js');
 
+  /* Never let the page be zoomed out or pushed sideways on phones */
+  try {
+    var vp = document.querySelector('meta[name="viewport"]');
+    if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover');
+    var fx = document.createElement('style');
+    fx.textContent = 'html,body{max-width:100%;overflow-x:hidden}html,body{overflow-x:clip}';
+    document.head.appendChild(fx);
+  } catch (e) {}
+
   /* ---- Theme (system by default, user can override) ---- */
   var KEY = 'holo-theme';
   var mq = window.matchMedia('(prefers-color-scheme: light)');
@@ -47,10 +56,10 @@
     var onHome = /^\/(landing\/?)?$/.test(location.pathname);
     if (!reduce && onHome && !introDone && !coming) {
       d.classList.add('intro-on');
-      setTimeout(function () { d.classList.remove('intro-on'); }, 30000); // safety net
+      setTimeout(function () { d.classList.remove('intro-on'); }, 30000);
     } else if (!reduce && (coming || !seen)) {
       d.classList.add('vt-in');
-      setTimeout(function () { d.classList.remove('vt-in'); }, 4500);     // safety net
+      setTimeout(function () { d.classList.remove('vt-in'); }, 4500);
     }
     sessionStorage.removeItem('holo-vt');
   } catch (e) {}
