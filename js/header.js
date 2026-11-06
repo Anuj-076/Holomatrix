@@ -5,20 +5,15 @@
   const C = HoloCommon, esc = UI.esc, safe = u => Site.safeUrl(u);
   const $ = (s, r = document) => r.querySelector(s);
   const CARET = '<svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>';
-  let access = null, lastType = 'mouse', navSig = '', inboxRes;
+  let access = null, profile = null, lastType = 'mouse', navSig = '', inboxRes;
   const timers = new Map();
   window.HoloInboxReady = new Promise(r => { inboxRes = r; });
 
-  if (!document.querySelector('link[href="/css/extras.css"]')) {
-    const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/css/extras.css'; document.head.appendChild(l);
-  }
+  if (!document.querySelector('link[href="/css/extras.css"]')) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/css/extras.css'; document.head.appendChild(l); }
 
   const seg = h => '/' + (String(h || '').split('#')[0].split('?')[0].split('/').filter(Boolean)[0] || '');
   const prem = p => p ? '<em class="prem">★ Premium</em>' : '';
-  const socials = () => {
-    const l = (Site.content && Site.content.links) || {};
-    return [l['social.instagram'] || 'https://www.instagram.com/holomatrix_consulting/', l['social.linkedin'] || 'https://www.linkedin.com/company/holomatrixconsulting'];
-  };
+  const socials = () => { const l = (Site.content && Site.content.links) || {}; return [l['social.instagram'] || 'https://www.instagram.com/holomatrix_consulting/', l['social.linkedin'] || 'https://www.linkedin.com/company/holomatrixconsulting']; };
   const socHtml = () => socials().map(u => '<a href="' + esc(safe(u)) + '" target="_blank" rel="noopener noreferrer" aria-label="' + esc(HoloIcons.label(HoloIcons.detect(u))) + '"><span class="ico">' + HoloIcons.svg(HoloIcons.detect(u)) + '</span></a>').join('');
 
   if (host) {
@@ -27,10 +22,8 @@
       '<header class="hdr" id="hdr"><div class="hdr-in">' +
       '<a href="/" class="hdr-brand" aria-label="Holomatrix home"><span class="img-slot logo-slot" data-img="brand.logo" data-alt="Holomatrix logo"><img src="/logo.jpg" alt="Holomatrix logo"></span><span data-t="brand.name">Holomatrix</span></a>' +
       '<nav class="hdr-nav" id="hdr-nav" aria-label="Main"></nav>' +
-      '<div class="hdr-r"><div class="hdr-soc" id="hdr-soc"></div>' +
-      '<button class="btn btn-ghost btn-icon" data-theme-toggle aria-label="Toggle theme">🌙</button><div id="hdr-pm"></div>' +
-      '<a class="hdr-burger' + (onTabs ? ' x' : '') + '" id="hdr-burger" href="' + (onTabs ? '/' : '/tabs') + '" aria-label="' + (onTabs ? 'Close menu' : 'Open menu') + '"><span></span><span></span></a></div>' +
-      '</div></header>';
+      '<div class="hdr-r"><div class="hdr-soc" id="hdr-soc"></div><button class="btn btn-ghost btn-icon" data-theme-toggle aria-label="Toggle theme">🌙</button><div id="hdr-pm"></div>' +
+      '<a class="hdr-burger' + (onTabs ? ' x' : '') + '" id="hdr-burger" href="' + (onTabs ? '/' : '/tabs') + '" aria-label="' + (onTabs ? 'Close menu' : 'Open menu') + '"><span></span><span></span></a></div></div></header>';
     Site.applyAll();
   }
 
@@ -47,12 +40,12 @@
   function renderProfile() {
     const box = $('#hdr-pm');
     if (!access) { box.innerHTML = '<a class="btn btn-primary btn-sm" href="/login"><span>Log in</span></a>'; return; }
-    const u = access.user, md = u.user_metadata || {}, name = md.full_name || md.name || u.email || '', pic = md.avatar_url || md.picture;
+    const u = access.user, md = u.user_metadata || {};
+    const name = (profile && profile.full_name) || md.full_name || md.name || u.email || '', pic = (profile && profile.avatar_url) || md.avatar_url || md.picture;
     const av = pic && /^https:\/\//.test(pic) ? '<img src="' + esc(pic) + '" alt="" referrerpolicy="no-referrer">' : esc((name || '?').trim().charAt(0).toUpperCase());
     box.innerHTML = '<div class="pm"><button class="pm-btn" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">' + av + '</button>' +
-      '<div class="pm-drop"><div class="hn-card"><div class="pm-name"><b>' + esc(name) + '</b><small>' + esc(u.email || '') + '</small></div>' +
-      '<a href="/dashboard"><span>Dashboard</span></a><a href="/dashboard#settings"><span>Settings</span></a>' +
-      (access.isStaff ? '<a href="/admin"><span>Admin dashboard</span></a>' : '') + '<button data-logout><span>Log out</span></button></div></div></div>';
+      '<div class="pm-drop"><div class="hn-card"><div class="pm-name"><b>' + esc(name) + '</b><small>' + (profile && profile.username ? '@' + esc(profile.username) : esc(u.email || '')) + '</small></div>' +
+      '<a href="/dashboard"><span>Dashboard</span></a>' + (access.isStaff ? '<a href="/admin"><span>Admin dashboard</span></a>' : '') + '<button data-logout><span>Log out</span></button></div></div></div>';
   }
 
   function setOpen(it, on) { it.classList.toggle('open', on); const a = it.querySelector('[aria-haspopup]'); if (a) a.setAttribute('aria-expanded', on); }
@@ -73,23 +66,25 @@
     document.addEventListener('click', e => { if (!host.contains(e.target)) closeAll(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
     document.addEventListener('click', e => { if (e.target.closest('[data-logout]')) Auth.signOut(); });
-
     const onScroll = () => $('#hdr').classList.toggle('scrolled', scrollY > 20);
     addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
-    $('#hdr-soc').innerHTML = socHtml();
-    renderNav(); renderProfile();
+    $('#hdr-soc').innerHTML = socHtml(); renderNav(); renderProfile();
     Site.ready.then(() => { navSig = ''; $('#hdr-soc').innerHTML = socHtml(); renderNav(); });
-    Site.accessReady.then(a => {
-      access = a; renderProfile();
+    Site.accessReady.then(async a => {
+      access = a;
       document.querySelectorAll('[data-guest]').forEach(el => { el.hidden = !!a; });
       document.querySelectorAll('[data-user]').forEach(el => { el.hidden = !a; });
       document.querySelectorAll('[data-editor]').forEach(el => { el.hidden = !(a && a.can('edit_site_content')); });
-      if (a) {
-        const s = document.createElement('script'); s.src = '/js/inbox.js';
-        s.onload = () => inboxRes(window.HoloInbox || null); s.onerror = () => inboxRes(null);
-        document.body.appendChild(s);
-      } else inboxRes(null);
+      if (!a) { renderProfile(); inboxRes(null); return; }
+      try { const { data } = await sb.from('profiles').select('username,full_name,avatar_url,profile_completed').eq('id', a.user.id).maybeSingle(); profile = data; } catch (e) {}
+      renderProfile();
+      // first login: everyone completes their profile once
+      const here = location.pathname.replace(/\/$/, '') || '/';
+      if (profile && profile.profile_completed === false && !['/welcome', '/login', '/signup', '/privacy', '/terms'].includes(here)) { UI.go('/welcome?next=' + encodeURIComponent(location.pathname + location.search)); return; }
+      const s = document.createElement('script'); s.src = '/js/inbox.js';
+      s.onload = () => inboxRes(window.HoloInbox || null); s.onerror = () => inboxRes(null);
+      document.body.appendChild(s);
     });
   }
 
