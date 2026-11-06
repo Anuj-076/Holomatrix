@@ -1,9 +1,12 @@
-/* Messages: private chats between hirers and clients. Round button bottom-right with a red unread number. */
+/* Messages: private chats between helpers and clients. Round button bottom-right with a red unread number. */
 (function () {
   'use strict';
   if (window.HoloInbox) return;
   const esc = UI.esc;
-  let me = null, threads = [], cur = null, msgs = [], ch = null, isOpen = false, fab, panel, badge, body, title, backBtn;
+  let me = null, threads = [], cur = null, msgs = [], ch = null, isOpen = false, fab, panel, badge, body, title, backBtn, reqOpen = false;
+  const asked = new Set();
+
+  if (!document.querySelector('link[href="/css/clients.css"]')) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/css/clients.css'; document.head.appendChild(l); }
 
   const myRead = t => t.client_id === me ? t.client_read_at : t.hirer_read_at;
   const other = t => t.client_id === me ? { n: t.hirer_name, a: t.hirer_avatar } : { n: t.client_name, a: t.client_avatar };
@@ -22,10 +25,10 @@
   function drawList() {
     cur = null; title.textContent = 'Messages'; backBtn.hidden = true;
     body.innerHTML = threads.map(t => { const o = other(t); return '<button class="mx-item" data-t="' + t.id + '">' + av(o) + '<span class="g"><b>' + esc(o.n || 'Member') + '</b><small>' + esc(t.last_preview || 'Say hello 👋') + '</small></span>' + (unread(t) ? '<span class="mx-dot"></span>' : '') + '</button>'; }).join('') ||
-      '<div class="mx-empty">No conversations yet.<br>Open a client profile and press <b>Chat</b>.</div>';
+      '<div class="mx-empty">No conversations yet.<br>Open a request in <b>Find a client</b> and press <b>Offer help</b>.</div>';
   }
 
-  function bubble(m) { return '<div class="mx-b ' + (m.sender_id === me ? 'me' : 'them') + '">' + esc(m.body) + '<small>' + tm(m.created_at) + '</small></div>'; }
+  const bubble = m => '<div class="mx-b ' + (m.sender_id === me ? 'me' : 'them') + '">' + esc(m.body) + '<small>' + tm(m.created_at) + '</small></div>';
   function drawMsgs() { const box = body.querySelector('.mx-msgs'); if (!box) return; box.innerHTML = msgs.map(bubble).join(''); body.scrollTop = body.scrollHeight; }
 
   async function markRead(id) {
@@ -34,15 +37,35 @@
     if (t) { if (t.client_id === me) t.client_read_at = new Date().toISOString(); else t.hirer_read_at = new Date().toISOString(); updBadge(); }
   }
 
+  async function closeRequest() {
+    const { error } = await sb.from('client_profiles').update({ request_status: 'closed', visible: false }).eq('user_id', me);
+    if (error) return UI.toast(error.message, 'error');
+    reqOpen = false; UI.toast('Request closed. Glad you found help! 🎉', 'success');
+    const n = body.querySelector('.mx-note'); if (n) { n.className = 'mx-note ok'; n.innerHTML = '✅ Your request is closed, so other helpers will not contact you about it.'; }
+  }
+
   async function openThread(id) {
     let t = threads.find(x => x.id === id);
     if (!t) { await loadThreads(); t = threads.find(x => x.id === id); }
     if (!t) return;
     cur = t; const o = other(t);
     title.textContent = o.n || 'Chat'; backBtn.hidden = false;
-    body.innerHTML = '<div class="mx-msgs"></div>';
+    body.innerHTML = '<div class="mx-top"><div class="mx-safe">🛡️ Stay safe: never share passwords, one-time codes or bank details, and never pay strangers in advance. Holomatrix is not responsible for payments or agreements.</div></div><div class="mx-msgs"></div>';
     const { data } = await sb.from('dm_messages').select('*').eq('thread_id', id).order('created_at');
     msgs = data || []; drawMsgs(); markRead(id);
+
+    reqOpen = false;
+    if (t.client_id === me) {   // I am the person who needs help
+      const { data: cp } = await sb.from('client_profiles').select('request_status').eq('user_id', me).maybeSingle();
+      reqOpen = !!(cp && cp.request_status === 'open');
+      const top = body.querySelector('.mx-top');
+      if (top && reqOpen) {
+        const n = document.createElement('div'); n.className = 'mx-note';
+        n.innerHTML = '🙋 Someone is offering to help. <b>Once you have found the help you need, close your request</b> so other helpers are not confused.<button type="button">I found help, close my request</button>';
+        n.querySelector('button').onclick = closeRequest; top.appendChild(n);
+      } else if (top && cp) top.insertAdjacentHTML('beforeend', '<div class="mx-note ok">✅ Your request is closed.</div>');
+    }
+
     let f = panel.querySelector('.mx-f');
     if (!f) {
       f = document.createElement('form'); f.className = 'mx-f'; f.autocomplete = 'off';
@@ -53,6 +76,11 @@
         const { data: m, error } = await sb.from('dm_messages').insert({ thread_id: cur.id, sender_id: me, body: text }).select().single();
         if (error) { inp.value = text; return UI.toast(error.message, 'error'); }
         if (!msgs.some(x => x.id === m.id)) { msgs.push(m); drawMsgs(); }
+        // Ask the person who needs help, the first time they reply in each chat
+        if (cur.client_id === me && reqOpen && !asked.has(cur.id)) {
+          asked.add(cur.id);
+          if (await UI.confirm('Have you found your helper?', 'If this person is helping you, please close your request now. Otherwise other helpers may keep contacting you about the same problem.', { confirmText: 'Yes, close my request', cancelText: 'Not yet' })) closeRequest();
+        }
       };
       panel.appendChild(f);
     }
