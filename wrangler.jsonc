@@ -2,6 +2,7 @@
   "name": "holomatrix",
   "main": "worker/index.js",
   "compatibility_date": "2025-10-01",
+  "keep_vars": true,
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
@@ -11,12 +12,15 @@
   },
   "ai": { "binding": "AI" },
   "vars": {
+    "SUPABASE_URL": "https://fywflsjzvzonhwsbrxef.supabase.co",
+    "SUPABASE_ANON_KEY": "sb_publishable_FLkkogqHErEjhPYKm2f0yA_Rm3eH_UX",
+    "SITE_URL": "https://holomatrix.otbts20137.workers.dev",
+    "BREVO_SENDER_EMAIL": "holomatrix.support@gmail.com",
+    "BREVO_SENDER_NAME": "Holomatrix",
     "GEMINI_MODEL": "gemini-3.1-flash-lite,gemini-3.5-flash-lite,gemini-3-flash-preview",
     "GROQ_MODEL": "llama-3.3-70b-versatile,llama-3.1-8b-instant",
     "OPENROUTER_MODEL": "openrouter/free,openai/gpt-oss-120b:free,google/gemma-4-31b-it:free",
-    "CF_AI_MODEL": "@cf/meta/llama-3.2-3b-instruct,@cf/meta/llama-3.1-8b-instruct-fp8",
-    "MISTRAL_MODEL": "mistral-small-latest",
-    "CEREBRAS_MODEL": "gpt-oss-120b"
+    "CF_AI_MODEL": "@cf/meta/llama-3.2-3b-instruct,@cf/meta/llama-3.1-8b-instruct-fp8"
   },
   "observability": { "enabled": true }
 }
