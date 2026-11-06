@@ -14,11 +14,10 @@
     }).join('');
     UI.observe(list);
   }
-  draw();
-  Site.ready.then(draw);
+  draw(); Site.ready.then(draw);
   Site.accessReady.then(a => {
     acc.innerHTML = a
-      ? '<a class="btn btn-ghost" href="/dashboard">Dashboard</a><a class="btn btn-ghost" href="/dashboard#settings">Settings</a>' + (a.isStaff ? '<a class="btn btn-ghost" href="/admin">Admin dashboard</a>' : '') + '<button class="btn btn-danger" data-logout>Log out</button>'
+      ? '<a class="btn btn-ghost" href="/dashboard">Dashboard</a>' + (a.isStaff ? '<a class="btn btn-ghost" href="/admin">Admin dashboard</a>' : '') + '<button class="btn btn-danger" data-logout>Log out</button>'
       : '<a class="btn btn-primary" href="/login">Log in</a><a class="btn btn-ghost" href="/signup">Sign up</a>';
   });
 })();
