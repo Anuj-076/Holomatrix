@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="/css/blocks.css">
   <link rel="stylesheet" href="/css/extras.css">
   <link rel="stylesheet" href="/css/holo.css">
+  <link rel="stylesheet" href="/css/holo2.css">
   <link rel="stylesheet" href="/css/intro.css">
 </head>
 <body data-hdr="over">
@@ -37,7 +38,7 @@
 
   <main>
     <section class="hero" id="home" data-section="hero" data-label="Hero">
-      <canvas id="hero-canvas" aria-hidden="true"></canvas>
+      <canvas id="hero-stars" aria-hidden="true"></canvas>
       <div class="hero-shade"></div>
       <div class="wide hero-inner" id="hero-inner">
         <div class="hero-copy">
@@ -57,7 +58,6 @@
       <a class="scroll-cue" href="#intro-sec"><span data-t="hero.scroll">Scroll</span><i></i></a>
     </section>
 
-    <!-- Holomatrix introduction (tag, moving line, text, Learn more, image slot) -->
     <section class="hi" id="intro-sec" data-section="intro" data-label="Holomatrix introduction"><div class="wide" id="hm-intro"></div></section>
 
     <section class="sheet" id="about" data-section="about" data-label="Founder & team">
@@ -74,7 +74,7 @@
             <p class="owner-title" data-t="owner.title" data-ph="Title / role"></p>
             <p class="owner-bio" data-t="owner.bio" data-multiline data-ph="Short bio"></p>
             <div class="owner-links">
-              <a class="pill" href="https://tr.ee/XFEbAXArQv" data-icon="linkedin" target="_blank" rel="noopener noreferrer" data-link="owner.linkedin" data-label="Founder: LinkedIn"><span data-t="owner.linkedin.label">LinkedIn</span></a>
+              <a class="pill" href="https://www.linkedin.com/in/frasamalpushp/" data-icon="linkedin" target="_blank" rel="noopener noreferrer" data-link="owner.linkedin" data-label="Founder: LinkedIn"><span data-t="owner.linkedin.label">LinkedIn</span></a>
               <a class="pill" href="https://x.com/AmalPushp4" data-icon="x" target="_blank" rel="noopener noreferrer" data-link="owner.x" data-label="Founder: X"><span data-t="owner.x.label">X</span></a>
               <a class="pill" href="https://www.instagram.com/amalpjha2701/" data-icon="instagram" target="_blank" rel="noopener noreferrer" data-link="owner.instagram" data-label="Founder: Instagram"><span data-t="owner.instagram.label">Instagram</span></a>
               <a class="pill" href="https://linktr.ee/amalpushp" data-icon="linktree" target="_blank" rel="noopener noreferrer" data-link="owner.linktree" data-label="Founder: Linktree"><span data-t="owner.linktree.label">Linktree</span></a>
@@ -83,8 +83,8 @@
         </div>
         <div class="team" id="team" hidden>
           <div class="pv-head reveal">
-            <div><p class="kicker" data-t="team.kicker">Staff team</p><h3 data-t="team.title" data-ph="Team heading"></h3></div>
-            <a class="pill" href="/about/staff-team"><span data-t="lp.more.team">View all</span></a>
+            <div><p class="kicker" data-t="team.kicker">Holomatrix Team</p><h3 data-t="team.title" data-ph="Team heading"></h3></div>
+            <a class="pill" href="/about/holomatrix-team"><span data-t="lp.more.team">View all</span></a>
           </div>
           <div class="team-grid" id="team-grid"></div>
         </div>
@@ -104,7 +104,7 @@
 
     <section class="pv" id="research" data-section="research" data-label="Researches" hidden>
       <div class="wide">
-        <div class="pv-head reveal"><div><p class="kicker" data-t="lp.res.kicker">Researches <em class="prem">★ Premium</em></p><h2 data-t="lp.res.title" data-ph="Heading"></h2></div><a class="pill" href="/research/all"><span data-t="lp.more.res">View all</span></a></div>
+        <div class="pv-head reveal"><div><p class="kicker" data-t="lp.res.kicker">Researches</p><h2 data-t="lp.res.title" data-ph="Heading"></h2></div><a class="pill" href="/research/all"><span data-t="lp.more.res">View all</span></a></div>
         <div class="grid-cards" id="lp-research"></div>
       </div>
     </section>
@@ -113,7 +113,7 @@
       <div class="wide">
         <div class="pv-head reveal"><div><p class="kicker" data-t="lp.cl.kicker">Client</p><h2 data-t="lp.cl.title" data-ph="Heading"></h2></div></div>
         <div class="pv-tiles">
-          <a class="card pv-tile reveal" href="/clients/find-a-client"><h3 data-t="lp.cl.find">Find a client</h3><em class="prem">★ Premium</em></a>
+          <a class="card pv-tile reveal" href="/clients/find-a-client" data-perm="find_clients" hidden><h3 data-t="lp.cl.find">Find a client</h3><span class="gradient-text">→</span></a>
           <a class="card pv-tile reveal" href="/clients/become-a-client"><h3 data-t="lp.cl.become">Become a client</h3><span class="gradient-text">→</span></a>
         </div>
       </div>
@@ -167,8 +167,11 @@
   <script src="/js/site.js"></script>
   <script src="/js/header.js"></script>
   <script src="/js/holo-content.js"></script>
+  <script src="/js/faq.js"></script>
   <script src="/js/landing.js"></script>
   <script src="/js/landing-holo.js"></script>
+  <script src="/js/constellations.js"></script>
+  <script src="/js/intro-fix.js"></script>
   <script src="/js/intro.js"></script>
 </body>
 </html>
