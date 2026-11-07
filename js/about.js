@@ -1,11 +1,12 @@
-/* About us: /about/holomatrix (full Holomatrix story) and /about/staff-team */
+/* About us: /about/holomatrix (About Holomatrix) and /about/holomatrix-team (Holomatrix Team) */
 (function () {
   'use strict';
   const C = HoloCommon, esc = UI.esc;
   const sections = { holomatrix: document.getElementById('holomatrix'), staff: document.getElementById('staff') };
-  let target = location.hash.slice(1), rendered = false;     // e.g. #learn-more, #education, #model
+  let target = location.hash.slice(1), rendered = false;
 
   function card(m) {
+    if (m.placeholder) return '<article class="se ph reveal"><div class="se-photo"><span>➕</span></div><div class="se-b"><h4>' + esc(m.name || 'New member') + '</h4><p class="se-role">' + esc(m.title || 'Coming soon') + '</p><p class="se-bio">Details will be added soon.</p></div></article>';
     const ini = esc((m.name || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase());
     const links = (Array.isArray(m.links) ? m.links : []).filter(l => l && l.url).map(l => {
       const n = HoloIcons.forItem(l), lab = l.label || HoloIcons.label(n);
@@ -19,12 +20,14 @@
 
   async function loadStaff() {
     const box = document.getElementById('staff-list');
-    const { data } = await sb.from('staff_members').select('*').eq('visible', true).order('position').order('created_at');
-    const list = data || [];
-    box.innerHTML = C.GROUPS.map(g => {
+    const [{ data }, a] = await Promise.all([sb.from('staff_members').select('*').eq('visible', true).order('position').order('created_at'), Site.accessReady]);
+    const list = data || [], canEdit = !!(a && a.can('edit_site_content'));
+    const add = canEdit ? '<a class="se ph add" href="/admin#website/people"><div class="se-photo"><span>＋</span></div><div class="se-b"><h4>Add team member</h4><p class="se-bio">Add a new member, or a "coming soon" placeholder. Only admins see this card.</p></div></a>' : '';
+    const html = C.GROUPS.map(g => {
       const rows = list.filter(m => (m.staff_group || 'Management') === g);
       return rows.length ? '<div class="sgroup"><h3>' + esc(g) + '</h3><div class="sgrid">' + rows.map(card).join('') + '</div></div>' : '';
-    }).join('') || '<div class="empty">The staff team will appear here soon.</div>';
+    }).join('');
+    box.innerHTML = (html || '<div class="empty">The Holomatrix Team will appear here soon.</div>') + (add ? '<div class="sgroup"><h3>Admin</h3><div class="sgrid">' + add + '</div></div>' : '');
     UI.observe(box);
   }
 
@@ -35,7 +38,7 @@
   }
 
   C.tabs({
-    el: document.getElementById('tabs'), items: [['holomatrix', 'Holomatrix'], ['staff', 'Staff team']],
+    el: document.getElementById('tabs'), items: [['holomatrix', 'About Holomatrix'], ['staff', 'Holomatrix Team']],
     onChange: id => {
       Object.keys(sections).forEach(k => { sections[k].hidden = k !== id; });
       if (id === 'holomatrix') showHolo();
