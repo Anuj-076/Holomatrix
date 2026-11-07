@@ -5,6 +5,7 @@
 .page { padding: clamp(50px, 9vw, 110px) 0 100px; max-width: 820px; }
 .page h1 { font-size: clamp(2.2rem, 6vw, 4rem); letter-spacing: -0.04em; margin-bottom: 30px; }
 .legal-body { white-space: pre-wrap; color: var(--muted); line-height: 1.8; font-size: 1rem; }
+.lg-h { text-decoration-color: var(--ul) !important; }   /* Terms / Privacy topics: royal-blue underline */
 .pg-foot { border-top: 1px solid var(--border); padding: 30px 0 100px; color: var(--muted); font-size: 0.9rem; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .pg-foot a:hover { color: var(--accent); }
 
