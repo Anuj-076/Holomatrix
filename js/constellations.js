@@ -1,5 +1,5 @@
-/* Hero constellations drawn from real star positions (IAU-style stick figures). No names or labels.
-   Laptop: move the mouse through them and they scatter; left alone for 90 seconds they re-form.
+/* Hero constellations: Orion (drawn from the reference picture), Taurus, Canis Major, both Dippers, Cassiopeia.
+   No names or labels. Laptop: move the mouse through them and they scatter; left alone for 90 seconds they re-form.
    Phone: they just drift gently. */
 (function () {
   'use strict';
@@ -8,13 +8,12 @@
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, coarse = matchMedia('(pointer: coarse)').matches;
   const REFORM_MS = 90000;
 
-  // c = centre [RA hours, Dec degrees]; s = stars [RA hours, Dec degrees, magnitude]; l = lines (star index pairs)
+  // c/s = real sky positions [RA hours, Dec degrees, magnitude]; p = flat picture coordinates [x, y(down), magnitude]; l = lines
   const CONS = [
-    { c: [5.5, 5],  // Orion
-      s: [[5.919, 7.407, 0.5], [5.419, 6.350, 1.6], [5.586, 9.934, 3.4], [5.679, -1.943, 1.8], [5.603, -1.202, 1.7], [5.533, -0.299, 2.2], [5.796, -9.670, 2.1], [5.242, -8.202, 0.2],
-          [6.040, 9.647, 4.1], [6.132, 14.768, 4.4], [6.199, 14.209, 4.4], [5.907, 20.276, 4.4], [6.065, 20.138, 4.7],
-          [4.850, 8.900, 4.4], [4.830, 6.961, 3.2], [4.854, 5.605, 3.7], [4.905, 2.441, 3.7], [5.013, 1.714, 4.5]],
-      l: [[2, 0], [2, 1], [0, 3], [1, 5], [3, 4], [4, 5], [3, 6], [5, 7], [0, 8], [8, 10], [10, 9], [9, 12], [12, 11], [13, 14], [14, 15], [15, 16], [16, 17]] },
+    { p: [[78, 116, 0.5], [127, 121, 1.6], [110, 100, 3.4], [97, 173, 1.8], [107, 167, 1.7], [117, 161, 2.2], [90, 218, 2.1], [143, 210, 0.2],      // Orion: Betelgeuse, Bellatrix, Meissa, belt (3), Saiph, Rigel
+          [68, 98, 4.2], [56, 72, 4.0], [71, 70, 4.2], [68, 37, 4.4], [83, 37, 4.4],                                                                  // raised arm and club
+          [175, 97, 4.3], [184, 106, 4.4], [183, 118, 3.6], [181, 133, 4.3], [168, 151, 4.6]],                                                         // shield
+      l: [[2, 0], [2, 1], [0, 3], [1, 5], [3, 4], [4, 5], [3, 6], [5, 7], [6, 7], [0, 8], [8, 9], [9, 11], [9, 10], [10, 12], [1, 15], [13, 14], [14, 15], [15, 16], [16, 17]] },
     { c: [4.4, 18],  // Taurus with the Pleiades
       s: [[4.599, 16.509, 0.9], [5.438, 28.608, 1.7], [5.627, 21.143, 3.0], [4.330, 15.628, 3.6], [4.382, 17.543, 3.8], [4.477, 19.180, 3.5], [4.478, 15.871, 3.4], [4.700, 22.957, 4.3],
           [4.011, 12.490, 3.4], [3.453, 9.733, 3.7], [3.414, 9.029, 3.6],
@@ -40,8 +39,9 @@
   let W = 0, H = 0, stars = [], lines = [], bg = [], mode = 'formed', lastTouch = 0, ret0 = 0, tick = 0, visible = true, spr = null, last = 0;
   const mouse = { x: -9999, y: -9999 }, col = { a: '#4de1ff', t: '#ffffff' };
 
-  /* Real sky positions → flat chart (north up, east to the left, like a star map) */
+  /* Real sky positions → flat chart (north up, east to the left, like a star map); flat pictures pass straight through */
   function project(cn) {
+    if (cn.p) return cn.p.map(s => ({ x: s[0], y: -s[1], mag: s[2] }));
     const R = Math.PI / 180, a0 = cn.c[0] * 15 * R, d0 = cn.c[1] * R;
     return cn.s.map(s => {
       const a = s[0] * 15 * R, d = s[1] * R, da = a - a0;
@@ -123,7 +123,7 @@
     if (ca > 0) { ctx.globalAlpha = 0.6 * ca; ctx.lineWidth = 1.3; ctx.beginPath(); lines.forEach(l => { ctx.moveTo(stars[l[0]].x, stars[l[0]].y); ctx.lineTo(stars[l[1]].x, stars[l[1]].y); }); ctx.stroke(); }
     stars.forEach(s => {
       const tw = 0.7 + 0.3 * Math.sin(t * 1.6 + s.ph), z = s.r * 3.6;
-      ctx.globalAlpha = 0.5 * tw; ctx.drawImage(spr, s.x - z, s.y - z, z * 2, z * 2);   // soft glow, small so the lines stay visible
+      ctx.globalAlpha = 0.5 * tw; ctx.drawImage(spr, s.x - z, s.y - z, z * 2, z * 2);
       ctx.globalAlpha = 0.95; ctx.fillStyle = col.t; ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 0.7, 0, 6.2832); ctx.fill();
     });
     ctx.globalAlpha = 1;
