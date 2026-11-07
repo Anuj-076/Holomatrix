@@ -1,4 +1,5 @@
-/* Holomatrix sections: 2/3 text + divider + Track Record, ticker bar, FAQ links, team placeholders */
+/* Holomatrix sections: 2/3 text + divider + Track Record, ticker bar, FAQ links, team tags, placeholders.
+   Cyan (--hl) = highlighted text.  Royal blue (--ul) = underlines, arrows, lines. */
 .hi { padding: 110px 0 120px; }
 .hi-grid { display: grid; grid-template-columns: 2fr 1fr; gap: clamp(20px, 3.5vw, 48px); align-items: stretch; }
 .hi-grid > * { min-width: 0; }
@@ -6,10 +7,10 @@
 /* Track Record: thin line (white in dark mode, black in light mode) + panel */
 .trk-wrap { display: grid; grid-template-columns: 2px 1fr; gap: clamp(18px, 2.6vw, 34px); }
 .trk-line { border-radius: 2px; background: linear-gradient(transparent, var(--text) 10%, var(--text) 90%, transparent); opacity: 0.9; }
-.trk-h { font-size: clamp(1.9rem, 3.2vw, 2.8rem); letter-spacing: -0.03em; color: var(--gold); margin-bottom: 18px; }
+.trk-h { font-size: clamp(1.9rem, 3.2vw, 2.8rem); letter-spacing: -0.03em; color: var(--hl); margin-bottom: 18px; }
 .trk-list { list-style: none; display: grid; gap: 14px; }
 .trk-list li { position: relative; padding-left: 26px; line-height: 1.65; color: var(--text); }
-.trk-list li::before { content: ''; position: absolute; left: 4px; top: 0.7em; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+.trk-list li::before { content: ''; position: absolute; left: 4px; top: 0.7em; width: 8px; height: 8px; border-radius: 50%; background: var(--ul); }
 body.editing .trk-list li:empty::before { position: static; display: inline-block; width: auto; height: auto; background: none; }
 @media (max-width: 900px) {
   .hi { padding-top: 100px; }
@@ -18,22 +19,30 @@ body.editing .trk-list li:empty::before { position: static; display: inline-bloc
   .trk-line { display: none; }
   /* narrow screens: a cyan box below the "about" text */
   .trk { padding: 26px; border-radius: 24px; background: linear-gradient(135deg, #5be6ff, #22bfe0); color: #04101c; box-shadow: 0 18px 50px -18px rgba(34, 191, 224, 0.6); }
-  .trk-h { color: #6a4300; }
+  .trk-h { color: #1b3aa8; }
   .trk-list li { color: #04101c; }
-  .trk-list li::before { background: #6a4300; }
+  .trk-list li::before { background: #1b3aa8; }
 }
 
 /* "Education. Research. Consulting" as a bar inside the left 2/3 */
-.mq { margin: 24px 0 18px; padding: 16px 0; border: 1px solid var(--border); border-left: 4px solid var(--gold); border-radius: 18px; background: var(--surface); }
+.mq { margin: 24px 0 18px; padding: 16px 0; border: 1px solid var(--border); border-left: 4px solid var(--ul); border-radius: 18px; background: var(--surface); }
 .mq-track { gap: 2.5rem; animation-duration: 28s; }
 .mq-i { font-size: clamp(1.5rem, 3.4vw, 2.6rem); }
 
 /* FAQ links + lists */
-.faq .a a, .flink { color: var(--gold); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.faq .a a, .flink { color: var(--hl); font-weight: 600; text-decoration: underline; text-decoration-color: var(--ul); text-underline-offset: 3px; }
 .faq .a p { margin-bottom: 10px; }
 .faq .a ul.list { margin: 8px 0 12px; }
 
-/* Holomatrix Team placeholders */
+/* arrows on the small link tiles */
+.pv-tile .gradient-text { background: none !important; -webkit-text-fill-color: var(--ul) !important; color: var(--ul); font-weight: 700; }
+
+/* Holomatrix Team: group tags + placeholders */
+.gtags { display: flex; gap: 6px; flex-wrap: wrap; }
+.gtag { padding: 3px 11px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; }
+.g-sci { background: #1fc8e8; color: #04101c; }
+.g-man { background: #d93a3a; color: #fff; }
+.g-con { background: #8b5a2b; color: #fff; }
 .se.ph { border-style: dashed; opacity: 0.85; }
 .se.ph .se-photo { color: var(--muted); font-size: 2.4rem; }
 a.se.ph.add { color: inherit; }
