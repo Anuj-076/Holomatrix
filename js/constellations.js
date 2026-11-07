@@ -1,44 +1,78 @@
-/* Hero constellations: Orion, Taurus, Little Dipper, Big Dipper, Cassiopeia.
-   Laptop: move the mouse through them and they scatter; left alone for 2.5 minutes they re-form.
-   Phone: the constellations just drift gently. */
+/* Hero constellations drawn from real star positions (IAU-style stick figures). No names or labels.
+   Laptop: move the mouse through them and they scatter; left alone for 90 seconds they re-form.
+   Phone: they just drift gently. */
 (function () {
   'use strict';
   const cv = document.getElementById('hero-stars'); if (!cv) return;
   const ctx = cv.getContext('2d'), hero = cv.parentElement;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, coarse = matchMedia('(pointer: coarse)').matches;
-  const REFORM_MS = 150000;
-  const SH = [
-    [[.5, .02], [.3, .14], [.7, .12], [.38, .52], [.5, .5], [.62, .48], [.5, .62], [.5, .74], [.3, .94], [.74, .92]], [[0, 1], [0, 2], [1, 3], [2, 5], [3, 4], [4, 5], [3, 8], [5, 9], [4, 6], [6, 7]],          // Orion
-    [[.34, .6], [.24, .48], [.14, .58], [.26, .72], [.62, .36], [.95, .06], [.64, .74], [.9, .9], [.05, .14], [.1, .08], [.13, .16], [.08, .22], [.16, .1]], [[2, 1], [1, 0], [3, 0], [0, 4], [4, 5], [0, 6], [6, 7]], // Taurus + Pleiades
-    [[.04, .6], [.18, .55], [.32, .62], [.46, .56], [.64, .44], [.72, .66], [.52, .74]], [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 3]],                                                               // Little Dipper
-    [[.04, .3], [.18, .4], [.32, .46], [.44, .56], [.66, .6], [.7, .82], [.46, .8]], [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 3]],                                                                   // Big Dipper
-    [[.04, .3], [.26, .78], [.5, .42], [.74, .8], [.96, .24]], [[0, 1], [1, 2], [2, 3], [3, 4]]                                                                                                                  // Cassiopeia
+  const REFORM_MS = 90000;
+
+  // c = centre [RA hours, Dec degrees]; s = stars [RA hours, Dec degrees, magnitude]; l = lines (star index pairs)
+  const CONS = [
+    { c: [5.5, 5],  // Orion
+      s: [[5.919, 7.407, 0.5], [5.419, 6.350, 1.6], [5.586, 9.934, 3.4], [5.679, -1.943, 1.8], [5.603, -1.202, 1.7], [5.533, -0.299, 2.2], [5.796, -9.670, 2.1], [5.242, -8.202, 0.2],
+          [6.040, 9.647, 4.1], [6.132, 14.768, 4.4], [6.199, 14.209, 4.4], [5.907, 20.276, 4.4], [6.065, 20.138, 4.7],
+          [4.850, 8.900, 4.4], [4.830, 6.961, 3.2], [4.854, 5.605, 3.7], [4.905, 2.441, 3.7], [5.013, 1.714, 4.5]],
+      l: [[2, 0], [2, 1], [0, 3], [1, 5], [3, 4], [4, 5], [3, 6], [5, 7], [0, 8], [8, 10], [10, 9], [9, 12], [12, 11], [13, 14], [14, 15], [15, 16], [16, 17]] },
+    { c: [4.4, 18],  // Taurus with the Pleiades
+      s: [[4.599, 16.509, 0.9], [5.438, 28.608, 1.7], [5.627, 21.143, 3.0], [4.330, 15.628, 3.6], [4.382, 17.543, 3.8], [4.477, 19.180, 3.5], [4.478, 15.871, 3.4], [4.700, 22.957, 4.3],
+          [4.011, 12.490, 3.4], [3.453, 9.733, 3.7], [3.414, 9.029, 3.6],
+          [3.791, 24.105, 2.9], [3.819, 24.053, 3.6], [3.748, 24.113, 3.7], [3.763, 24.368, 3.9], [3.772, 23.948, 4.2], [3.753, 24.467, 4.3]],
+      l: [[5, 4], [4, 3], [3, 6], [6, 0], [0, 2], [5, 7], [7, 1], [3, 8], [8, 9], [9, 10], [16, 14], [14, 13], [13, 11], [11, 12], [11, 15]] },
+    { c: [6.95, -23],  // Canis Major
+      s: [[6.752, -16.716, -1.5], [6.378, -17.956, 2.0], [7.063, -15.633, 4.1], [7.140, -26.393, 1.8], [6.977, -28.972, 1.5], [7.402, -29.303, 2.4], [6.338, -30.063, 3.0], [7.032, -23.833, 3.0]],
+      l: [[1, 0], [0, 2], [0, 7], [7, 3], [3, 5], [3, 4], [4, 6]] },
+    { c: [12.3, 56],  // Ursa Major: the Big Dipper
+      s: [[11.062, 61.751, 1.8], [11.031, 56.382, 2.4], [11.897, 53.695, 2.4], [12.257, 57.033, 3.3], [12.900, 55.960, 1.8], [13.399, 54.925, 2.2], [13.792, 49.313, 1.9]],
+      l: [[0, 1], [1, 2], [2, 3], [3, 0], [3, 4], [4, 5], [5, 6]] },
+    { c: [16, 82],  // Ursa Minor: the Little Dipper
+      s: [[2.530, 89.264, 2.0], [17.537, 86.586, 4.4], [16.766, 82.037, 4.2], [15.734, 77.795, 4.3], [16.292, 75.755, 5.0], [15.345, 71.834, 3.0], [14.845, 74.156, 2.1]],
+      l: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 3]] },
+    { c: [1.0, 60],  // Cassiopeia
+      s: [[0.153, 59.150, 2.3], [0.675, 56.537, 2.2], [0.945, 60.717, 2.5], [1.430, 60.235, 2.7], [1.907, 63.670, 3.4]],
+      l: [[0, 1], [1, 2], [2, 3], [3, 4]] }
   ];
-  const BOX_L = [[.64, .12, .28, .52], [.40, .66, .28, .26], [.04, .74, .26, .20], [.38, .05, .26, .22], [.05, .06, .24, .14]];
-  const BOX_P = [[.50, .12, .45, .30], [.50, .50, .45, .20], [.05, .74, .50, .14], [.04, .44, .50, .14], [.05, .05, .50, .10]];
+  // boxes [x, y, w, h] as fractions of the hero. Order: Orion, Taurus, Canis Major, Big Dipper, Little Dipper, Cassiopeia
+  const BOX_L = [[.76, .10, .20, .62], [.30, .50, .30, .36], [.60, .62, .14, .32], [.03, .05, .26, .20], [.33, .05, .16, .24], [.54, .06, .17, .12]];
+  const BOX_P = [[.62, .27, .32, .34], [.04, .64, .52, .20], [.64, .68, .30, .26], [.04, .04, .46, .15], [.58, .03, .38, .19], [.06, .30, .42, .10]];
 
   let W = 0, H = 0, stars = [], lines = [], bg = [], mode = 'formed', lastTouch = 0, ret0 = 0, tick = 0, visible = true, spr = null, last = 0;
   const mouse = { x: -9999, y: -9999 }, col = { a: '#4de1ff', t: '#ffffff' };
+
+  /* Real sky positions → flat chart (north up, east to the left, like a star map) */
+  function project(cn) {
+    const R = Math.PI / 180, a0 = cn.c[0] * 15 * R, d0 = cn.c[1] * R;
+    return cn.s.map(s => {
+      const a = s[0] * 15 * R, d = s[1] * R, da = a - a0;
+      const k = Math.sin(d0) * Math.sin(d) + Math.cos(d0) * Math.cos(d) * Math.cos(da);
+      return { x: -(Math.cos(d) * Math.sin(da)) / k, y: (Math.cos(d0) * Math.sin(d) - Math.sin(d0) * Math.cos(d) * Math.cos(da)) / k, mag: s[2] };
+    });
+  }
 
   function colors() {
     const cs = getComputedStyle(document.documentElement);
     col.a = cs.getPropertyValue('--accent').trim() || col.a; col.t = cs.getPropertyValue('--text').trim() || col.t;
     spr = document.createElement('canvas'); spr.width = spr.height = 48;
     const x = spr.getContext('2d'), g = x.createRadialGradient(24, 24, 0, 24, 24, 24);
-    g.addColorStop(0, col.a); g.addColorStop(0.25, col.a + '88'); g.addColorStop(1, col.a + '00');
+    g.addColorStop(0, col.a + 'aa'); g.addColorStop(0.3, col.a + '44'); g.addColorStop(1, col.a + '00');
     x.fillStyle = g; x.fillRect(0, 0, 48, 48);
   }
 
   function build() {
     const boxes = W < H * 0.9 ? BOX_P : BOX_L, old = stars; stars = []; lines = [];
-    for (let gi = 0; gi < 5; gi++) {
-      const pts = SH[gi * 2], ed = SH[gi * 2 + 1], b = boxes[gi], base = stars.length;
+    CONS.forEach((cn, gi) => {
+      const pts = project(cn), b = boxes[gi], base = stars.length;
+      let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+      pts.forEach(p => { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); });
+      const w = x1 - x0 || 1, h = y1 - y0 || 1, bw = b[2] * W, bh = b[3] * H, k = Math.min(bw / w, bh / h);
+      const ox = b[0] * W + (bw - w * k) / 2, oy = b[1] * H + (bh - h * k) / 2;
       pts.forEach((p, i) => {
-        const hx = b[0] * W + p[0] * b[2] * W, hy = b[1] * H + p[1] * b[3] * H, o = old[base + i];
-        stars.push({ hx, hy, x: o ? o.x : hx, y: o ? o.y : hy, vx: o ? o.vx : 0, vy: o ? o.vy : 0, g: gi, r: i % 3 === 0 ? 2.8 : 1.9, ph: Math.random() * 6.28 });
+        const hx = ox + (p.x - x0) * k, hy = oy + (y1 - p.y) * k, o = old[base + i];
+        stars.push({ hx, hy, x: o ? o.x : hx, y: o ? o.y : hy, vx: o ? o.vx : 0, vy: o ? o.vy : 0, g: gi, r: Math.max(1.1, Math.min(4, 1.3 + (4.6 - p.mag) * 0.5)), ph: Math.random() * 6.28 });
       });
-      ed.forEach(l => lines.push([base + l[0], base + l[1]]));
-    }
+      cn.l.forEach(l => lines.push([base + l[0], base + l[1]]));
+    });
     if (!bg.length) bg = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 1.1 + 0.3, p: Math.random() * 6.28 }));
   }
   function resize() {
@@ -50,15 +84,15 @@
   function update(now, dt, t) {
     if (!coarse && mouse.x > -999) {
       let hit = false;
-      for (const s of stars) { const d = Math.hypot(s.x - mouse.x, s.y - mouse.y); if (d < 130) { hit = true; break; } }
-      if (hit) { if (mode !== 'free') mode = 'free'; lastTouch = now; }
+      for (const s of stars) { if (Math.hypot(s.x - mouse.x, s.y - mouse.y) < 130) { hit = true; break; } }
+      if (hit) { mode = 'free'; lastTouch = now; }
     }
     if (mode === 'free' && now - lastTouch > REFORM_MS) { mode = 'ret'; ret0 = now; }
     if (mode === 'ret' && now - ret0 > 7000) mode = 'formed';
 
     for (const s of stars) {
-      const tx = s.hx + Math.sin(t * 0.15 + s.g * 1.7) * 10 + Math.sin(t * 0.8 + s.ph) * 1.5;
-      const ty = s.hy + Math.cos(t * 0.12 + s.g * 2.3) * 8 + Math.cos(t * 0.7 + s.ph) * 1.5;
+      const tx = s.hx + Math.sin(t * 0.15 + s.g * 1.7) * 8 + Math.sin(t * 0.8 + s.ph) * 1.2;
+      const ty = s.hy + Math.cos(t * 0.12 + s.g * 2.3) * 6 + Math.cos(t * 0.7 + s.ph) * 1.2;
       if (mode === 'formed') { s.x = tx; s.y = ty; s.vx = s.vy = 0; }
       else if (mode === 'ret') { const k = 1 - Math.exp(-dt * 0.9); s.x += (tx - s.x) * k; s.y += (ty - s.y) * k; }
       else {
@@ -86,11 +120,11 @@
         if (d < 105) { ctx.globalAlpha = (1 - d / 105) * 0.3 * (1 - ca); ctx.beginPath(); ctx.moveTo(stars[i].x, stars[i].y); ctx.lineTo(stars[j].x, stars[j].y); ctx.stroke(); }
       }
     }
-    if (ca > 0) { ctx.globalAlpha = 0.5 * ca; ctx.beginPath(); lines.forEach(l => { ctx.moveTo(stars[l[0]].x, stars[l[0]].y); ctx.lineTo(stars[l[1]].x, stars[l[1]].y); }); ctx.stroke(); }
+    if (ca > 0) { ctx.globalAlpha = 0.6 * ca; ctx.lineWidth = 1.3; ctx.beginPath(); lines.forEach(l => { ctx.moveTo(stars[l[0]].x, stars[l[0]].y); ctx.lineTo(stars[l[1]].x, stars[l[1]].y); }); ctx.stroke(); }
     stars.forEach(s => {
-      const tw = 0.65 + 0.35 * Math.sin(t * 1.6 + s.ph), z = s.r * 7;
-      ctx.globalAlpha = tw; ctx.drawImage(spr, s.x - z, s.y - z, z * 2, z * 2);
-      ctx.globalAlpha = 0.95; ctx.fillStyle = col.t; ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 0.75, 0, 6.2832); ctx.fill();
+      const tw = 0.7 + 0.3 * Math.sin(t * 1.6 + s.ph), z = s.r * 3.6;
+      ctx.globalAlpha = 0.5 * tw; ctx.drawImage(spr, s.x - z, s.y - z, z * 2, z * 2);   // soft glow, small so the lines stay visible
+      ctx.globalAlpha = 0.95; ctx.fillStyle = col.t; ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 0.7, 0, 6.2832); ctx.fill();
     });
     ctx.globalAlpha = 1;
   }
