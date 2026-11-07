@@ -15,14 +15,12 @@
       if (!f || FONTS.indexOf(f) < 0 || f === 'Space Grotesk' || f === 'Inter') return;
       if (document.querySelector('link[data-blk-font="' + f + '"]')) return;
       const l = document.createElement('link');
-      l.rel = 'stylesheet';
-      l.href = 'https://fonts.googleapis.com/css2?family=' + f.replace(/ /g, '+') + ':wght@400;500;600;700&display=swap';
-      l.setAttribute('data-blk-font', f);
-      document.head.appendChild(l);
+      l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=' + f.replace(/ /g, '+') + ':wght@400;500;600;700&display=swap';
+      l.setAttribute('data-blk-font', f); document.head.appendChild(l);
     });
   }
 
-  function linkHtml(i, preview) {
+  function linkHtml(i) {
     const name = HoloIcons.forItem(i);
     const inner = '<span class="ico">' + HoloIcons.svg(name) + '</span><span>' + esc(i.label || HoloIcons.label(name)) + '</span>';
     if (!i.url) return '<span class="blk-link ph-link">' + inner + '</span>';
@@ -35,6 +33,8 @@
     const sz = SIZES[s.size] || SIZES.m;
     const al = ALIGN.indexOf(s.align) > -1 ? s.align : 'left';
     let css = '--bk-size:' + sz[0] + ';--bk-hsize:' + sz[1] + ';';
+    if (+s.fontPx >= 10 && +s.fontPx <= 60) css += '--bk-size:' + (+s.fontPx) + 'px;';      // exact text size
+    if (+s.headPx >= 14 && +s.headPx <= 120) css += '--bk-hsize:' + (+s.headPx) + 'px;';   // exact heading size
     if (hex(s.color)) css += '--bk-color:' + s.color + ';';
     if (hex(s.headingColor)) css += '--bk-head:' + s.headingColor + ';';
     if (hex(s.bg)) css += '--bk-bg:' + s.bg + ';';
@@ -47,19 +47,15 @@
     if (b.type === 'text') {
       inner = head + (d.body ? '<div class="blk-p">' + esc(d.body) + '</div>' : '');
     } else if (b.type === 'links') {
-      const items = (d.items || []).filter(i => i && (i.url || (showEmpty && (i.label || true))));
-      inner = head + '<div class="blk-links lay-' + (d.layout === 'cards' ? 'cards' : 'pills') + '">' +
-        items.filter(i => i.url || showEmpty).map(i => linkHtml(i)).join('') + '</div>';
+      const items = (d.items || []).filter(i => i && (i.url || showEmpty));
+      inner = head + '<div class="blk-links lay-' + (d.layout === 'cards' ? 'cards' : 'pills') + '">' + items.map(linkHtml).join('') + '</div>';
     } else if (b.type === 'photos') {
       const cols = [2, 3, 4].indexOf(+d.cols) > -1 ? +d.cols : 3;
       const shape = ['rounded', 'circle', 'square'].indexOf(d.shape) > -1 ? d.shape : 'rounded';
       const items = (d.items || []).filter(i => i && (i.url || showEmpty));
       inner = head + '<div class="blk-photos" style="--cols:' + cols + '">' + items.map(it => {
-        const img = it.url && /^https:\/\//.test(it.url)
-          ? '<img src="' + esc(it.url) + '" alt="' + esc(it.caption || '') + '" loading="lazy">'
-          : '<div class="ph-empty">' + CAM + '</div>';
-        const fig = '<figure class="ph sh-' + shape + '"><div class="ph-img">' + img + '</div>' +
-          (it.caption ? '<figcaption>' + esc(it.caption) + '</figcaption>' : '') + '</figure>';
+        const img = it.url && /^https:\/\//.test(it.url) ? '<img src="' + esc(it.url) + '" alt="' + esc(it.caption || '') + '" loading="lazy">' : '<div class="ph-empty">' + CAM + '</div>';
+        const fig = '<figure class="ph sh-' + shape + '"><div class="ph-img">' + img + '</div>' + (it.caption ? '<figcaption>' + esc(it.caption) + '</figcaption>' : '') + '</figure>';
         return it.link ? '<a class="ph-a" href="' + esc(safeUrl(it.link)) + '" target="_blank" rel="noopener noreferrer">' + fig + '</a>' : fig;
       }).join('') + '</div>';
     }
