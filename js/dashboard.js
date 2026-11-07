@@ -16,11 +16,10 @@
     const { data: subs } = await sb.from('subscriptions').select('expires_at,plans(name)').eq('user_id', uid).eq('status', 'active').order('expires_at', { ascending: false, nullsFirst: true }).limit(5);
     const sub = (subs || []).find(s => !s.expires_at || new Date(s.expires_at) > new Date());
     const { data: cp } = await sb.from('client_profiles').select('request_status,status').eq('user_id', uid).maybeSingle();
-    const bday = prof.birthday ? new Date(prof.birthday + 'T00:00:00').toLocaleDateString([], { dateStyle: 'long' }) : '—';
 
     $('#dash').innerHTML =
       '<div class="panel"><div class="prof"><span class="av" style="width:92px;height:92px;font-size:2rem">' + (avatar && /^https:\/\//.test(avatar) ? '<img src="' + esc(avatar) + '" alt="" referrerpolicy="no-referrer">' : esc((name || '?').trim().charAt(0).toUpperCase())) + '</span>' +
-      '<div style="flex:1;min-width:200px"><h2 class="pt" style="margin:0">' + esc(name) + '</h2><p class="psub" style="margin:2px 0 6px">@' + esc(prof.username || '—') + '</p><small style="color:var(--muted)">' + esc(a.user.email) + ' · Birthday: ' + esc(bday) + '</small></div>' +
+      '<div style="flex:1;min-width:200px"><h2 class="pt" style="margin:0">' + esc(name) + '</h2><p class="psub" style="margin:2px 0 6px">@' + esc(prof.username || '—') + '</p><small style="color:var(--muted)">' + esc(a.user.email) + '</small></div>' +
       '<a class="btn btn-primary btn-sm" href="/welcome?edit=1">Edit profile</a></div></div>' +
 
       '<div class="cards">' +
