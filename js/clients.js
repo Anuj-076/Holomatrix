@@ -1,4 +1,4 @@
-/* Clients: /clients/find-a-client (only people with the "Find clients" permission) and /clients/become-a-client (free for everyone) */
+/* Clients: /clients/find-a-client (people with the "Find clients" permission) and /clients/become-a-client (free for everyone) */
 (function () {
   'use strict';
   const C = HoloCommon, esc = UI.esc;
@@ -60,7 +60,7 @@
 
       '<div class="fsec"><h3>1. What do you need?</h3><p class="hint">Describe your need in one short line.</p>' +
       '<div class="field"><label>What do you need? *</label><input class="input" id="need" maxlength="120" placeholder="e.g. Guidance for my physics research paper" value="' + esc(p.headline || '') + '"></div>' +
-      '<div class="field"><label>Define your problem * (at least 40 characters)</label><textarea class="input" id="prob" maxlength="1500" placeholder="What is the situation? What have you tried? What result do you want?">' + esc(p.bio || '') + '</textarea><p class="hint">Do not write phone numbers, addresses, ID numbers, passwords or private medical, legal or money details here. Share them only in chat, and only with people you trust.</p></div></div>' +
+      '<div class="field"><label>Define your problem * (at least 40 characters)</label><textarea class="input" id="prob" maxlength="1500" placeholder="What is the situation? What have you tried? What result do you want?">' + esc(p.bio || '') + '</textarea><p class="hint">Please don\'t write phone numbers, addresses, ID numbers, passwords or private medical, legal or money details here. Share them only in chat.</p></div></div>' +
 
       '<div class="fsec"><h3>2. Field and kind of help</h3><label class="hint">Field(s) *</label>' + pick('checkbox', 'fields', C.FIELDS, p.fields || []) + '<label class="hint">Type of help you need *</label>' + pick('checkbox', 'help', C.HELP_TYPES, p.help_types || []) + '</div>' +
 
@@ -79,8 +79,7 @@
       '<label class="hint">Other social media (optional)</label><div id="srows"></div><button type="button" id="sadd" style="height:36px;border:1px solid var(--border);border-radius:10px;padding:0 14px;width:max-content;margin:4px 0 14px">+ Add link</button>' +
       '<div class="field"><label>Anything else helpers should know (optional)</label><textarea class="input" id="extra" maxlength="1500">' + esc(p.extra || '') + '</textarea></div></div>' +
 
-      '<div class="warn-box"><b>⚠ Before you post.</b>\nYour request is visible to approved helpers while it is open. Holomatrix is not responsible for any payment, agreement, quality of help, advice, loss or scam. We do not verify helpers, so check them yourself. Never pay strangers in advance and never share passwords, one-time codes or bank details. When you have found help, close your request. Requests that are illegal, harmful, or ask someone to cheat or break rules will be removed.</div>' +
-      (m ? '' : '<label class="chk"><input type="checkbox" id="agree"><span>I agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>, and I understand Holomatrix is not responsible for payments or agreements between clients and helpers.</span></label>') +
+      (m ? '' : '<label class="chk"><input type="checkbox" id="agree"><span>I agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>') +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"><button class="btn btn-primary" id="save">' + (m ? 'Save changes' : 'Post my request') + '</button>' + (m ? '<button class="btn btn-danger btn-sm" id="del">Delete request</button>' : '') + '</div></div>';
 
     const drawS = () => { $('#srows').innerHTML = socials.map(srow).join(''); };
@@ -111,7 +110,7 @@
       if (!helps.length) return UI.toast('Choose the type of help you need.', 'warn');
       if (val('dn').length < 2) return UI.toast('Please enter your display name.', 'warn');
       if (val('li') && !li) return UI.toast('The LinkedIn link is not valid.', 'warn');
-      if (!m && !$('#agree').checked) return UI.toast('Please accept the Terms, Privacy Policy and payment notice.', 'warn');
+      if (!m && !$('#agree').checked) return UI.toast('Please accept the Terms and Privacy Policy.', 'warn');
       const row = { display_name: val('dn'), headline: need, bio: prob, photo_url: p.photo_url || null, fields, help_types: helps, urgency: one('urg') || 'flexible', budget_type: one('bud') || 'discuss', budget_text: val('budt') || null,
         mode: one('mode') || 'online', location: val('loc') || null, languages: val('lang') || null, qualifications: chk('quals'), qualification_other: val('qo') || null, linkedin: li || null,
         socials: socials.map(s => ({ label: (s.label || '').trim(), url: C.normUrl(s.url) })).filter(s => s.url), extra: val('extra') || null };
