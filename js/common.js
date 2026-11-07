@@ -11,7 +11,10 @@
   C.BUDGET = [['paid', 'Paid'], ['free', 'Free / volunteer'], ['discuss', 'Open to discuss']];
   C.MODES = [['online', 'Online'], ['inperson', 'In person'], ['either', 'Online or in person']];
   C.QUALS = ['High school', 'Diploma', 'Associate degree', 'B.Sc', 'B.Tech / B.E.', 'B.A.', 'B.Com', 'BBA', 'B.Pharm', 'MBBS', 'LL.B', 'M.Sc', 'M.Tech / M.E.', 'M.A.', 'M.Com', 'MBA', 'M.Phil', 'Ph.D', 'Postdoctoral researcher', 'Professor', 'Certified professional', 'Self-taught'];
-  C.GROUPS = ['Scientists', 'Management', 'Executive team'];
+  /* Team groups. The admin dropdown shows C.GROUPS; the About page shows one section per C.SECTIONS item.
+     A person in a combined group (e.g. "Management & Scientists") appears under both, with both tags. */
+  C.SECTIONS = ['Scientists', 'Management', 'Consultants'];
+  C.GROUPS = ['Scientists', 'Management', 'Consultants', 'Management & Scientists', 'Scientists & Consultants', 'Management & Consultants'];
 
   const sub = (base, list) => list.map(x => ({ label: x[1], href: base + '/' + x[0] }));
   C.DEFAULT_NAV = [
