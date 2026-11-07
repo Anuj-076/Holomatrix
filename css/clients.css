@@ -24,9 +24,9 @@
 .fsec > .hint { margin: 0 0 14px; }
 .form .fsec .field:last-child { margin-bottom: 0; }
 
-/* chat notes */
+/* chat notes (the old "stay safe" line is no longer shown) */
 .mx-top { padding: 10px 12px 0; display: grid; gap: 8px; }
-.mx-safe { font-size: 0.76rem; color: var(--muted); padding: 8px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
+.mx-safe { display: none; }
 .mx-note { padding: 12px 14px; border-radius: 14px; font-size: 0.85rem; background: color-mix(in srgb, var(--warn) 12%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent); display: grid; gap: 8px; }
 .mx-note.ok { background: color-mix(in srgb, var(--success) 12%, transparent); border-color: color-mix(in srgb, var(--success) 45%, transparent); }
 .mx-note button { justify-self: start; padding: 7px 14px; border-radius: 999px; background: var(--accent-grad); color: var(--on-accent); font-weight: 600; font-size: 0.8rem; }
