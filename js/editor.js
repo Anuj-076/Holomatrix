@@ -1,4 +1,4 @@
-/* Holomatrix on-site editor: texts (colour + size), images, colours, fonts, links, sections and extra items */
+/* Holomatrix on-site editor: texts (colour, size, bold, underline), images, colours, fonts, links, sections and extra items with sizes */
 (function () {
   'use strict';
   const Site = window.Site, UI = window.UI;
@@ -11,6 +11,10 @@
   let dock, drawer, fileInput, pendingKey = null, tb, curEl = null;
   const pk = () => Site.pageKey();
   const touch = () => { st.dirty = true; };
+
+  const css = document.createElement('style');
+  css.textContent = '.ed-tb .sw-c{width:26px;min-width:26px;height:26px;border-radius:50%;border:2px solid var(--border);padding:0}.ed-tb .sw-c:hover{border-color:var(--text)}.ed-tb button.on{background:var(--accent-grad);color:var(--on-accent);border-color:transparent}.ed-sz{display:grid;gap:4px;margin:8px 0}.ed-sz label{font-size:.78rem;color:var(--muted);display:flex;justify-content:space-between}.ed-sz input[type=range]{width:100%}.ed-sz select{padding:7px 9px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-size:.82rem}';
+  document.head.appendChild(css);
 
   function theme() {
     if (!st.theme) { const t = Site.content.theme || {}; st.theme = { dark: Object.assign({}, t.dark), light: Object.assign({}, t.light), fontHead: t.fontHead || '', fontBody: t.fontBody || '' }; }
@@ -92,11 +96,13 @@
     if (e.target.closest('a, button, summary, label')) { e.preventDefault(); e.stopImmediatePropagation(); }
   }, true);
 
-  /* ---------- Text colour + size bar ---------- */
+  /* ---------- Text bar: Cyan / Royal blue first, then any colour, size, bold, underline ---------- */
   const rgbToHex = s => { if (!s || /rgba\(0, 0, 0, 0\)|transparent/.test(s)) return '#ffffff'; const m = s.match(/\d+/g); return '#' + m.slice(0, 3).map(x => (+x).toString(16).padStart(2, '0')).join(''); };
   function buildTb() {
     tb = document.createElement('div'); tb.className = 'ed-tb ed-ui'; tb.hidden = true;
-    tb.innerHTML = '<input type="color" id="tbc" title="Text colour"><button type="button" data-s="-1" title="Smaller">A−</button><input type="number" id="tbn" min="10" max="160" title="Size in px"><button type="button" data-s="1" title="Bigger">A+</button><button type="button" data-r="1" title="Reset">↺</button>';
+    tb.innerHTML = '<button type="button" class="sw-c" data-col="#4de1ff" title="Cyan (highlight)" style="background:#4de1ff"></button><button type="button" class="sw-c" data-col="#4169e1" title="Royal blue" style="background:#4169e1"></button>' +
+      '<input type="color" id="tbc" title="Any colour"><button type="button" data-s="-1" title="Smaller">A−</button><input type="number" id="tbn" min="10" max="160" title="Size in px"><button type="button" data-s="1" title="Bigger">A+</button>' +
+      '<button type="button" data-b="1" title="Bold"><b>B</b></button><button type="button" data-u="1" title="Underline (royal blue)"><u>U</u></button><button type="button" data-r="1" title="Reset">↺</button>';
     document.body.appendChild(tb);
     tb.addEventListener('mousedown', e => { if (e.target.tagName !== 'INPUT') e.preventDefault(); });
     const cur = () => { const k = curEl.dataset.t; return st.styles[k] || (st.styles[k] = Object.assign({}, (Site.content.styles || {})[k])); };
@@ -108,19 +114,24 @@
       apply();
     });
     tb.addEventListener('click', e => {
-      const b = e.target.closest('button'); if (!b || !curEl) return; const s = cur(), n = $$('#tbn', tb)[0];
-      if (b.dataset.s) { s.size = Math.max(10, Math.min(160, (+n.value || 16) + (+b.dataset.s) * 2)); n.value = s.size; }
-      if (b.dataset.r) { s.color = ''; s.size = ''; showTb(curEl); }
-      apply();
+      const b = e.target.closest('button'); if (!b || !curEl) return;
+      const s = cur(), n = tb.querySelector('#tbn');
+      if (b.dataset.col) s.color = b.dataset.col;
+      if (b.dataset.s) s.size = Math.max(10, Math.min(160, (+n.value || 16) + (+b.dataset.s) * 2));
+      if (b.dataset.b) s.bold = !s.bold;
+      if (b.dataset.u) s.ul = !s.ul;
+      if (b.dataset.r) { s.color = ''; s.size = ''; s.bold = false; s.ul = false; }
+      apply(); showTb(curEl);
     });
   }
   function showTb(el) {
     curEl = el; const k = el.dataset.t, s = mStyles()[k] || {}, cs = getComputedStyle(el);
     tb.querySelector('#tbc').value = isHex(s.color) ? s.color : rgbToHex(cs.color);
     tb.querySelector('#tbn').value = s.size || Math.round(parseFloat(cs.fontSize));
+    tb.querySelector('[data-b]').classList.toggle('on', !!s.bold); tb.querySelector('[data-u]').classList.toggle('on', !!s.ul);
     tb.hidden = false;
     const r = el.getBoundingClientRect(), top = r.top > 130 ? r.top - 54 : r.bottom + 8;
-    tb.style.top = Math.max(76, Math.min(innerHeight - 60, top)) + 'px'; tb.style.left = Math.max(8, Math.min(innerWidth - 290, r.left)) + 'px';
+    tb.style.top = Math.max(76, Math.min(innerHeight - 60, top)) + 'px'; tb.style.left = Math.max(8, Math.min(innerWidth - 420, r.left)) + 'px';
   }
   function hideTb() { if (tb) tb.hidden = true; curEl = null; }
   document.addEventListener('focusin', e => { if (!st.on) return; const el = e.target.closest && e.target.closest('[data-t]'); if (el) showTb(el); });
@@ -161,6 +172,10 @@
   }
 
   /* ---------- Design drawer ---------- */
+  const sizeUnit = k => (k === 'h' || k === 's') ? 'px' : '%';
+  const sz = (i, key, label, min, max, val) => '<div class="ed-sz"><label>' + label + '<b>' + (val ? val + sizeUnit(key) : 'auto') + '</b></label><input type="range" min="' + min + '" max="' + max + '" value="' + (val || min) + '" data-xz="' + i + ':' + key + '"></div>';
+  const alSel = (i, v) => '<div class="ed-sz"><label>Alignment</label><select data-xz="' + i + ':al">' + [['left', 'Left'], ['center', 'Center'], ['right', 'Right']].map(o => '<option value="' + o[0] + '"' + ((v || 'left') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></div>';
+
   function renderDrawer() {
     const t = theme(), m = st.mode, pal = Object.assign({}, Site.DEFAULT_THEME[m], t[m] || {});
     const names = { bg: 'Background', bg2: 'Surfaces / menu', text: 'Text', muted: 'Muted text', accent: 'Accent 1', accent2: 'Accent 2' };
@@ -178,16 +193,17 @@
     const icons = n => '<option value="auto"' + (!n || n === 'auto' ? ' selected' : '') + '>Auto</option>' + HoloIcons.names.map(k => '<option value="' + k + '"' + (k === n ? ' selected' : '') + '>' + HoloIcons.label(k) + '</option>').join('');
     const XL = { text: '📝 Text placeholder', image: '🖼️ Image placeholder', social: '🔗 Social links' };
     const ex = exList().map((x, i) => {
-      const body = x.type === 'social'
-        ? (x.items || []).map((it, j) => '<div class="ed-sr"><select data-xs="' + i + ':' + j + '" data-k="icon">' + icons(it.icon) + '</select><input type="text" data-xs="' + i + ':' + j + '" data-k="url" placeholder="https://…" value="' + esc(it.url || '') + '"><button data-xrmi="' + i + ':' + j + '">✕</button></div>').join('') + '<button class="ed-link" data-xadd="' + i + '">+ Add link</button>'
-        : '<p class="ed-hint">Click it on the page to fill it in.</p>';
-      return '<div class="ed-ex"><div class="ed-row"><b>' + XL[x.type] + '</b><span><button data-xu="' + i + '" ' + (i === 0 ? 'disabled' : '') + '>↑</button><button data-xd="' + i + '">↓</button><button data-xdel="' + i + '">✕</button></span></div>' + body + '</div>';
+      const links = x.type === 'social' ? (x.items || []).map((it, j) => '<div class="ed-sr"><select data-xs="' + i + ':' + j + '" data-k="icon">' + icons(it.icon) + '</select><input type="text" data-xs="' + i + ':' + j + '" data-k="url" placeholder="https://…" value="' + esc(it.url || '') + '"><button data-xrmi="' + i + ':' + j + '">✕</button></div>').join('') + '<button class="ed-link" data-xadd="' + i + '">+ Add link</button>' : '<p class="ed-hint">Click it on the page to fill it in.</p>';
+      const ctl = x.type === 'text' ? sz(i, 'w', 'Width ', 30, 100, +x.w || 100) + alSel(i, x.al)
+        : x.type === 'image' ? sz(i, 'w', 'Width ', 30, 100, +x.w || 100) + sz(i, 'h', 'Height ', 0, 700, +x.h || 0) + alSel(i, x.al)
+        : sz(i, 's', 'Icon size ', 14, 48, +x.s || 20) + alSel(i, x.al);
+      return '<div class="ed-ex"><div class="ed-row"><b>' + XL[x.type] + '</b><span><button data-xu="' + i + '" ' + (i === 0 ? 'disabled' : '') + '>↑</button><button data-xd="' + i + '">↓</button><button data-xdel="' + i + '">✕</button></span></div>' + links + ctl + '</div>';
     }).join('');
 
     drawer.innerHTML =
       '<div class="ed-dh"><strong>Design</strong><button data-x="close" aria-label="Close">✕</button></div>' +
-      '<div class="ed-sec"><h5>Add to this page</h5><div class="ed-add"><button data-xnew="text">📝 Text placeholder</button><button data-xnew="image">🖼️ Image placeholder</button><button data-xnew="social">🔗 Social links block</button></div>' + (ex || '<p class="ed-hint">Items you add appear at the bottom of this page. They stay hidden from visitors until you fill them in.</p>') + '</div>' +
-      '<div class="ed-sec"><h5>Text colour and size</h5><p class="ed-hint">Click any text on the page and use the small bar above it.</p></div>' +
+      '<div class="ed-sec"><h5>Add to this page</h5><div class="ed-add"><button data-xnew="text">📝 Text placeholder</button><button data-xnew="image">🖼️ Image placeholder</button><button data-xnew="social">🔗 Social links block</button></div>' + (ex || '<p class="ed-hint">Items you add appear at the bottom of this page, and you can set their size here. They stay hidden from visitors until you fill them in.</p>') + '</div>' +
+      '<div class="ed-sec"><h5>Text colour, size, bold, underline</h5><p class="ed-hint">Click any text on the page and use the small bar above it. Cyan and Royal blue are always the first two colours.</p></div>' +
       '<div class="ed-sec"><h5>Colours</h5><div class="ed-seg"><button data-mode="dark" class="' + (m === 'dark' ? 'on' : '') + '">Dark mode</button><button data-mode="light" class="' + (m === 'light' ? 'on' : '') + '">Light mode</button></div>' +
       Object.keys(names).map(k => '<div class="ed-row"><label>' + names[k] + '</label><span><code>' + esc(pal[k]) + '</code><input type="color" data-c="' + k + '" value="' + esc(pal[k]) + '"></span></div>').join('') +
       '<button class="ed-link" data-x="reset-colors">Reset colours to default</button></div>' +
@@ -201,6 +217,10 @@
     if (!inDrawer(e)) return; const t = e.target;
     if (t.dataset.c) { theme()[st.mode][t.dataset.c] = t.value; st.themeTouched = true; touch(); Site.applyTheme(theme()); const c = t.parentElement.querySelector('code'); if (c) c.textContent = t.value; }
     if (t.dataset.xs) { const [i, j] = t.dataset.xs.split(':').map(Number), it = (exList()[i] || {}).items; if (it && it[j]) { it[j][t.dataset.k] = t.value; st.extrasTouched = true; touch(); refresh(); } }
+    if (t.dataset.xz) {
+      const [i, k] = t.dataset.xz.split(':'), it = exList()[+i];
+      if (it) { it[k] = t.type === 'range' ? +t.value : t.value; st.extrasTouched = true; touch(); refresh(); const b = t.parentElement.querySelector('b'); if (b) b.textContent = it[k] ? it[k] + sizeUnit(k) : 'auto'; }
+    }
   });
   document.addEventListener('change', e => {
     if (!inDrawer(e)) return; const t = e.target;
@@ -245,7 +265,7 @@
     if (Object.keys(st.texts).length) add('texts', Object.assign({}, Site.content.texts, st.texts));
     if (Object.keys(st.images).length) add('images', clean(Site.content.images, st.images));
     if (Object.keys(st.links).length) add('links', clean(Site.content.links, st.links));
-    if (Object.keys(st.styles).length) { const m = Object.assign({}, Site.content.styles, st.styles); Object.keys(m).forEach(k => { if (!m[k] || (!m[k].color && !m[k].size)) delete m[k]; }); add('styles', m); }
+    if (Object.keys(st.styles).length) { const m = Object.assign({}, Site.content.styles, st.styles); Object.keys(m).forEach(k => { const v = m[k]; if (!v || (!v.color && !v.size && !v.bold && !v.ul)) delete m[k]; }); add('styles', m); }
     if (st.themeTouched) add('theme', theme());
     if (st.sectionsTouched) add('sections', secState());
     if (st.extrasTouched) add('extras', exAll());
