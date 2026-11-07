@@ -3,9 +3,9 @@
   'use strict';
   const C = {};
 
-  C.NEWS_CATS = [['all', 'All articles'], ['physics', 'Physics'], ['astronomy', 'Astronomy'], ['biology', 'Biology'], ['chemistry', 'Chemistry'], ['technology', 'Technology'], ['holomatrix', 'Holomatrix'], ['other', 'Other']];
-  C.RES_CATS = [['all', 'All researches'], ['physics', 'Physics'], ['chemistry', 'Chemistry'], ['biology', 'Biology'], ['astronomy', 'Astronomy']];
-  C.FIELDS = [['physics', 'Physics'], ['biology', 'Biology'], ['chemistry', 'Chemistry'], ['astronomy', 'Astronomy'], ['technology', 'Technology'], ['other', 'Other']];
+  C.NEWS_CATS = [['all', 'All articles'], ['physics', 'Physics'], ['astronomy', 'Astronomy'], ['holomatrix', 'Holomatrix'], ['other', 'Other']];
+  C.RES_CATS = [['all', 'All researches'], ['physics', 'Physics'], ['astronomy', 'Astronomy']];
+  C.FIELDS = [['physics', 'Physics'], ['astronomy', 'Astronomy'], ['other', 'Other']];
   C.HELP_TYPES = [['tutoring', 'Tutoring / teaching'], ['research', 'Research guidance'], ['project', 'Project help'], ['review', 'Paper / report review'], ['tech', 'Technical / software help'], ['advice', 'Consultation / advice'], ['mentor', 'Mentorship'], ['other', 'Other']];
   C.URGENCY = [['flexible', 'Flexible'], ['month', 'Within a month'], ['week', 'Within a week'], ['urgent', 'Urgent (1–2 days)']];
   C.BUDGET = [['paid', 'Paid'], ['free', 'Free / volunteer'], ['discuss', 'Open to discuss']];
@@ -17,8 +17,8 @@
   C.DEFAULT_NAV = [
     { id: 'news', label: 'News', href: '/news/all', visible: true, children: sub('/news', C.NEWS_CATS) },
     { id: 'research', label: 'Researches', href: '/research/all', premium: true, visible: true, children: sub('/research', C.RES_CATS) },
-    { id: 'about', label: 'About us', href: '/about/holomatrix', visible: true, children: [{ label: 'Holomatrix', href: '/about/holomatrix' }, { label: 'Staff team', href: '/about/staff-team' }] },
-    { id: 'clients', label: 'Client', href: '/clients/find-a-client', visible: true, children: [{ label: 'Find a client', href: '/clients/find-a-client', premium: true }, { label: 'Become a client', href: '/clients/become-a-client' }] },
+    { id: 'about', label: 'About us', href: '/about/holomatrix', visible: true, children: [{ label: 'About Holomatrix', href: '/about/holomatrix' }, { label: 'Holomatrix Team', href: '/about/holomatrix-team' }] },
+    { id: 'clients', label: 'Client', href: '/clients/become-a-client', visible: true, children: [{ label: 'Find a client', href: '/clients/find-a-client', perm: 'find_clients' }, { label: 'Become a client', href: '/clients/become-a-client' }] },
     { id: 'funds', label: 'Funds', href: '/funds/subscribe', visible: true, children: [{ label: 'Subscribe', href: '/funds/subscribe' }, { label: 'Donate', href: '/funds/donate' }] },
     { id: 'contact', label: 'Contact us', href: '/contact/ai-support', visible: true, children: [{ label: 'AI support', href: '/contact/ai-support' }, { label: 'Staff support', href: '/contact/staff-support' }] }
   ];
@@ -54,22 +54,23 @@
       (meta.length ? '<div class="cl-meta">' + meta.join('') + '</div>' : '') +
       (c.bio ? '<p class="cl-prob">' + esc(c.bio) + '</p>' : '') +
       (quals.length ? '<div class="tags"><small class="by">Preferred helper:</small>' + quals.map(q => '<span class="tag2">🎓 ' + esc(q) + '</span>').join('') + '</div>' : '') +
-      (full && c.extra ? '<p>' + esc(c.extra) + '</p>' : '') +
-      (links ? '<div class="cl-links">' + links + '</div>' : '') +
+      (full && c.extra ? '<p>' + esc(c.extra) + '</p>' : '') + (links ? '<div class="cl-links">' + links + '</div>' : '') +
       (n ? '<div class="cl-foot">💬 ' + n + ' helper' + (n > 1 ? 's' : '') + ' already talking to this person</div>' : '') +
       '<div class="cl-actions">' + (mine ? '<a class="btn btn-ghost btn-sm" href="/clients/become-a-client">Manage my request</a>' : '<button class="btn btn-primary btn-sm" data-chat="' + c.user_id + '">💬 Offer help</button>') +
       (full || !c.uid ? '' : '<a class="btn btn-ghost btn-sm" href="/clients/find-a-client/' + c.uid + '">View request</a>') + '</div></article>';
   };
 
-  /* Tabs driven by the address: /news/physics, /clients/become-a-client ... (no page reload) */
-  const SLUG = { find: 'find-a-client', become: 'become-a-client', staff: 'staff-team' };
+  /* Tabs driven by the address: /news/physics, /about/holomatrix-team ... (no page reload) */
+  const SLUG = { find: 'find-a-client', become: 'become-a-client', staff: 'holomatrix-team' };
+  const LEGACY = { 'staff-team': 'staff', 'hire-a-client': 'find' };
   C.tabs = function (o) {
     const parts = () => location.pathname.split('/').filter(Boolean);
     const base = '/' + (parts()[0] || ''), ids = o.items.map(i => i[0]), seg = id => SLUG[id] || id;
     const url = id => base + '/' + seg(id);
     let cur = null;
     const read = () => {
-      const s = parts()[1], p = ids.find(id => seg(id) === s); if (p) return p;
+      let s = parts()[1]; if (LEGACY[s]) s = seg(LEGACY[s]);
+      const p = ids.find(id => seg(id) === s); if (p) return p;
       const h = location.hash.slice(1).toLowerCase();
       return ids.find(id => id === h || seg(id) === h) || ids[0];
     };
@@ -85,7 +86,7 @@
     });
     addEventListener('popstate', () => { const n = read(); if (n !== cur) { cur = n; draw(); o.onChange(n); } });
     cur = read();
-    try { history.replaceState(null, '', url(cur)); } catch (e) {}
+    try { history.replaceState(null, '', url(cur) + (location.hash && !ids.includes(location.hash.slice(1)) ? location.hash : '')); } catch (e) {}
     draw(); o.onChange(cur);
   };
 
