@@ -1,15 +1,8 @@
 /* On-site editor (only loaded for people with edit permission) */
 .ed-dock { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 9000; }
-.ed-pill, .ed-bar button {
-  padding: 11px 20px; border-radius: 999px; font-weight: 600; font-size: 0.9rem;
-  background: var(--glass); border: 1px solid var(--border); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  box-shadow: var(--shadow); transition: transform 0.2s, border-color 0.2s;
-}
+.ed-pill, .ed-bar button { padding: 11px 20px; border-radius: 999px; font-weight: 600; font-size: 0.9rem; background: var(--glass); border: 1px solid var(--border); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: var(--shadow); transition: transform 0.2s, border-color 0.2s; }
 .ed-pill:hover, .ed-bar button:hover { transform: translateY(-2px); border-color: var(--accent); }
-.ed-bar {
-  display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 999px;
-  background: var(--glass); border: 1px solid var(--accent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: var(--shadow);
-}
+.ed-bar { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 999px; background: var(--glass); border: 1px solid var(--accent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: var(--shadow); }
 .ed-bar button { box-shadow: none; padding: 9px 16px; }
 .ed-bar .ed-save { background: var(--accent-grad); color: var(--on-accent); border: 0; }
 .ed-bar .ed-save:disabled { opacity: 0.6; }
@@ -17,9 +10,7 @@
 .ed-live::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--danger); animation: ed-blink 1.4s infinite; }
 @keyframes ed-blink { 50% { opacity: 0.25; } }
 
-body.editing [data-t] {
-  outline: 1px dashed color-mix(in srgb, var(--accent) 65%, transparent); outline-offset: 4px; cursor: text; caret-color: var(--accent);
-}
+body.editing [data-t] { outline: 1px dashed color-mix(in srgb, var(--accent) 65%, transparent); outline-offset: 4px; cursor: text; caret-color: var(--accent); }
 body.editing [data-t]:hover { outline-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
 body.editing [data-t]:empty { display: inline-block; min-width: 120px; min-height: 1.2em; }
 body.editing [data-t]:empty::before { content: attr(data-ph); opacity: 0.45; }
@@ -27,17 +18,18 @@ body.editing .reveal, body.editing .reveal-clip { opacity: 1 !important; transfo
 body.editing .cursor-ring { display: none; }
 
 .ed-img-btn { position: absolute; inset: auto 10px 10px auto; z-index: 5; display: flex; gap: 6px; }
-.ed-img-btn button {
-  padding: 8px 14px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
-  background: var(--bg-2); border: 1px solid var(--accent); color: var(--text); box-shadow: var(--shadow);
-}
+.ed-img-btn button { padding: 8px 14px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; background: var(--bg-2); border: 1px solid var(--accent); color: var(--text); box-shadow: var(--shadow); }
 body.editing .img-slot { outline: 2px dashed color-mix(in srgb, var(--accent) 65%, transparent); outline-offset: -2px; }
 
-.ed-drawer {
-  position: fixed; top: 0; left: 0; bottom: 0; width: min(330px, 92vw); z-index: 9100; overflow-y: auto;
-  background: var(--bg-2); border-right: 1px solid var(--border); box-shadow: var(--shadow);
-  transform: translateX(-105%); transition: transform 0.5s var(--ease); padding: 18px;
-}
+/* text colour + size bar */
+.ed-tb { position: fixed; z-index: 9200; display: flex; align-items: center; gap: 6px; padding: 7px 9px; border-radius: 14px; background: var(--bg-2); border: 1px solid var(--accent); box-shadow: var(--shadow); }
+.ed-tb[hidden] { display: none; }
+.ed-tb input[type="color"] { width: 38px; height: 32px; border: 1px solid var(--border); border-radius: 8px; background: none; padding: 2px; cursor: pointer; }
+.ed-tb input[type="number"] { width: 62px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 0.85rem; }
+.ed-tb button { min-width: 34px; height: 32px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--border); font-weight: 700; font-size: 0.82rem; }
+.ed-tb button:hover { border-color: var(--accent); }
+
+.ed-drawer { position: fixed; top: 0; left: 0; bottom: 0; width: min(340px, 92vw); z-index: 9100; overflow-y: auto; background: var(--bg-2); border-right: 1px solid var(--border); box-shadow: var(--shadow); transform: translateX(-105%); transition: transform 0.5s var(--ease); padding: 18px; }
 .ed-drawer.open { transform: none; }
 .ed-dh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-family: var(--font-head); font-size: 1.2rem; }
 .ed-dh button { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); }
@@ -54,9 +46,13 @@ body.editing .img-slot { outline: 2px dashed color-mix(in srgb, var(--accent) 65
 .ed-row button:disabled { opacity: 0.3; cursor: default; }
 .ed-field { display: grid; gap: 6px; margin-bottom: 12px; }
 .ed-field label { font-size: 0.8rem; color: var(--muted); }
-.ed-field input, .ed-field select {
-  width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
-  background: var(--surface); color: var(--text); font: inherit; font-size: 0.88rem;
-}
+.ed-field input, .ed-field select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 0.88rem; }
 .ed-hint { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
-.ed-link { color: var(--accent); font-size: 0.85rem; margin-top: 10px; text-decoration: underline; }
+.ed-link { color: var(--accent); font-size: 0.85rem; margin-top: 8px; text-decoration: underline; }
+.ed-add { display: grid; gap: 8px; margin-bottom: 14px; }
+.ed-add button { padding: 11px 14px; border-radius: 12px; border: 1px dashed var(--accent); font-weight: 600; text-align: left; transition: background 0.2s; }
+.ed-add button:hover { background: var(--surface-2); }
+.ed-ex { padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; background: var(--surface); }
+.ed-sr { display: grid; grid-template-columns: 112px 1fr 28px; gap: 6px; margin: 8px 0; }
+.ed-sr select, .ed-sr input { padding: 8px 9px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 0.82rem; min-width: 0; }
+.ed-sr button { border: 1px solid var(--border); border-radius: 8px; }
