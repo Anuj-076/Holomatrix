@@ -1,12 +1,26 @@
-/* Holomatrix section fixes: 2/3 text + 1/3 image, bar ticker, FAQ links, team placeholders */
+/* Holomatrix sections: 2/3 text + divider + Track Record, ticker bar, FAQ links, team placeholders */
 .hi { padding: 110px 0 120px; }
 .hi-grid { display: grid; grid-template-columns: 2fr 1fr; gap: clamp(20px, 3.5vw, 48px); align-items: stretch; }
 .hi-grid > * { min-width: 0; }
-.hi-img { aspect-ratio: auto; height: 100%; min-height: 440px; border-radius: 26px; }
+
+/* Track Record: thin line (white in dark mode, black in light mode) + panel */
+.trk-wrap { display: grid; grid-template-columns: 2px 1fr; gap: clamp(18px, 2.6vw, 34px); }
+.trk-line { border-radius: 2px; background: linear-gradient(transparent, var(--text) 10%, var(--text) 90%, transparent); opacity: 0.9; }
+.trk-h { font-size: clamp(1.9rem, 3.2vw, 2.8rem); letter-spacing: -0.03em; color: var(--gold); margin-bottom: 18px; }
+.trk-list { list-style: none; display: grid; gap: 14px; }
+.trk-list li { position: relative; padding-left: 26px; line-height: 1.65; color: var(--text); }
+.trk-list li::before { content: ''; position: absolute; left: 4px; top: 0.7em; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+body.editing .trk-list li:empty::before { position: static; display: inline-block; width: auto; height: auto; background: none; }
 @media (max-width: 900px) {
-  .hi-grid { grid-template-columns: 1fr; }
-  .hi-img { order: -1; height: auto; min-height: 0; aspect-ratio: 16 / 10; }
   .hi { padding-top: 100px; }
+  .hi-grid { grid-template-columns: 1fr; }
+  .trk-wrap { display: block; }
+  .trk-line { display: none; }
+  /* narrow screens: a cyan box below the "about" text */
+  .trk { padding: 26px; border-radius: 24px; background: linear-gradient(135deg, #5be6ff, #22bfe0); color: #04101c; box-shadow: 0 18px 50px -18px rgba(34, 191, 224, 0.6); }
+  .trk-h { color: #6a4300; }
+  .trk-list li { color: #04101c; }
+  .trk-list li::before { background: #6a4300; }
 }
 
 /* "Education. Research. Consulting" as a bar inside the left 2/3 */
