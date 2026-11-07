@@ -56,13 +56,16 @@
     });
   };
 
-  /* ---------- Text colour + size ---------- */
+  /* ---------- Text style: colour, size, bold, underline (royal blue) ---------- */
   Site.applyStyles = function (map) {
     map = map || {};
     $$('[data-t]').forEach(el => {
-      const s = map[el.dataset.t], n = s ? +s.size : 0;
+      const s = map[el.dataset.t] || null, n = s ? +s.size : 0;
       el.style.color = (s && isHex(s.color)) ? s.color : '';
       el.style.fontSize = (n >= 10 && n <= 160) ? n + 'px' : '';
+      el.style.fontWeight = (s && s.bold) ? '700' : '';
+      if (s && s.ul) { el.style.textDecoration = 'underline'; el.style.textDecorationColor = 'var(--ul, #4169e1)'; el.style.textDecorationThickness = '2px'; el.style.textUnderlineOffset = '5px'; }
+      else { el.style.textDecoration = ''; el.style.textDecorationColor = ''; el.style.textDecorationThickness = ''; el.style.textUnderlineOffset = ''; }
     });
   };
 
@@ -103,23 +106,25 @@
     $$('[data-nav]').forEach(el => { el.hidden = hidden.indexOf(el.dataset.nav) > -1; });
   };
 
-  /* ---------- Extra items (text / image placeholders, social link blocks) added with Edit site ---------- */
+  /* ---------- Extra items (text / image placeholders, social link blocks) with their own sizes ---------- */
   Site.pageKey = () => (location.pathname.split('/').filter(Boolean)[0] || 'home');
-  const XCSS = '.xtra{padding:40px 0;position:relative;z-index:2}body[data-hdr="over"] .xtra{background:var(--bg-2)}.xtra .wide{display:grid;gap:34px}.xt,.xs,.xi{position:relative;max-width:900px;width:100%}.xh{font-size:clamp(1.6rem,3.4vw,2.6rem);letter-spacing:-.03em;margin-bottom:10px}.xp{color:var(--muted);white-space:pre-wrap;line-height:1.8}.xim{aspect-ratio:16/9;border-radius:22px;border:1px solid var(--border);background:var(--surface-2);display:grid;place-items:center;color:var(--muted)}.xi figcaption{margin-top:10px;color:var(--muted);font-size:.92rem;text-align:center}.xs-row{display:flex;flex-wrap:wrap;gap:10px}.xs-a{display:inline-flex;align-items:center;gap:10px;padding:10px 18px;border:1px solid var(--border);border-radius:999px;background:var(--surface);transition:transform .25s,border-color .25s}a.xs-a:hover{transform:translateY(-3px);border-color:var(--accent)}.xs-a.ph{opacity:.5;border-style:dashed}.xs-a .ico{width:20px;height:20px;display:inline-block}.xs-a .ico svg{width:100%;height:100%;display:block;border-radius:5px}.xrm{position:absolute;top:-6px;right:0;z-index:6;padding:6px 12px;border-radius:999px;background:var(--bg-2);border:1px solid var(--danger);color:var(--danger);font-size:.78rem;font-weight:600}';
+  const XCSS = '.xtra{padding:40px 0;position:relative;z-index:2}body[data-hdr="over"] .xtra{background:var(--bg-2)}.xtra .wide{display:grid;gap:34px}.xt,.xs,.xi{position:relative;max-width:900px;width:100%}.xh{font-size:clamp(1.6rem,3.4vw,2.6rem);letter-spacing:-.03em;margin-bottom:10px}.xp{color:var(--muted);white-space:pre-wrap;line-height:1.8}.xim{aspect-ratio:16/9;border-radius:22px;border:1px solid var(--border);background:var(--surface-2);display:grid;place-items:center;color:var(--muted)}.xi figcaption{margin-top:10px;color:var(--muted);font-size:.92rem;text-align:center}.xs-row{display:flex;flex-wrap:wrap;gap:10px}.xs-a{display:inline-flex;align-items:center;gap:10px;padding:10px 18px;border:1px solid var(--border);border-radius:999px;background:var(--surface);transition:transform .25s,border-color .25s;font-size:max(.85rem,calc(var(--xs,20px)*.7))}a.xs-a:hover{transform:translateY(-3px);border-color:var(--accent)}.xs-a.ph{opacity:.5;border-style:dashed}.xs-a .ico{width:var(--xs,20px);height:var(--xs,20px);display:inline-block}.xs-a .ico svg{width:100%;height:100%;display:block;border-radius:5px}.xrm{position:absolute;top:-6px;right:0;z-index:6;padding:6px 12px;border-radius:999px;background:var(--bg-2);border:1px solid var(--danger);color:var(--danger);font-size:.78rem;font-weight:600}';
   const xvis = (x, c) => {
     const t = c.texts || {}, im = c.images || {};
     return x.type === 'text' ? !!(t['x.' + x.id + '.h'] || t['x.' + x.id + '.p']) : x.type === 'image' ? !!im['x.' + x.id + '.img'] : (x.items || []).some(i => i && i.url);
   };
+  const xbox = x => (+x.w >= 30 && +x.w <= 100 ? 'width:' + (+x.w) + '%;' : '') + (x.al === 'center' ? 'margin-inline:auto;' : x.al === 'right' ? 'margin-left:auto;' : '');
   function xhtml(x, editing) {
     const id = esc(x.id), rm = editing ? '<button type="button" class="ed-ui xrm" data-xrm="' + id + '">🗑 Remove</button>' : '';
-    if (x.type === 'text') return '<div class="xt" data-xid="' + id + '">' + rm + '<h3 class="xh" data-t="x.' + id + '.h" data-ph="Heading">Heading</h3><div class="xp" data-t="x.' + id + '.p" data-multiline>Write your text here…</div></div>';
-    if (x.type === 'image') return '<figure class="xi" data-xid="' + id + '">' + rm + '<div class="xim img-slot" data-img="x.' + id + '.img"><span>📷 Click to add an image</span></div><figcaption data-t="x.' + id + '.cap" data-ph="Caption (optional)"></figcaption></figure>';
+    if (x.type === 'text') return '<div class="xt" data-xid="' + id + '" style="' + xbox(x) + '">' + rm + '<h3 class="xh" data-t="x.' + id + '.h" data-ph="Heading">Heading</h3><div class="xp" data-t="x.' + id + '.p" data-multiline>Write your text here…</div></div>';
+    if (x.type === 'image') return '<figure class="xi" data-xid="' + id + '" style="' + xbox(x) + '">' + rm + '<div class="xim img-slot" data-img="x.' + id + '.img" style="' + (+x.h > 0 ? 'height:' + (+x.h) + 'px;aspect-ratio:auto;' : '') + '"><span>📷 Click to add an image</span></div><figcaption data-t="x.' + id + '.cap" data-ph="Caption (optional)"></figcaption></figure>';
     const items = (x.items || []).filter(i => i && (i.url || editing)).map(i => {
       const ic = window.HoloIcons ? '<span class="ico">' + HoloIcons.svg(HoloIcons.forItem(i)) + '</span>' : '';
       const lab = esc(i.label || (window.HoloIcons ? HoloIcons.label(HoloIcons.forItem(i)) : 'Link'));
       return i.url ? '<a class="xs-a" href="' + esc(Site.safeUrl(i.url)) + '" target="_blank" rel="noopener noreferrer">' + ic + '<span>' + lab + '</span></a>' : '<span class="xs-a ph">' + ic + '<span>' + lab + '</span></span>';
     }).join('');
-    return '<div class="xs" data-xid="' + id + '">' + rm + '<h3 class="xh" data-t="x.' + id + '.h" data-ph="Heading (optional)"></h3><div class="xs-row">' + items + '</div></div>';
+    const just = x.al === 'center' ? 'center' : x.al === 'right' ? 'flex-end' : 'flex-start';
+    return '<div class="xs" data-xid="' + id + '" style="' + xbox(x) + '--xs:' + (+x.s >= 14 && +x.s <= 48 ? +x.s : 20) + 'px">' + rm + '<h3 class="xh" data-t="x.' + id + '.h" data-ph="Heading (optional)"></h3><div class="xs-row" style="justify-content:' + just + '">' + items + '</div></div>';
   }
   Site.renderExtras = function (all, c) {
     c = c || Site.content || {};
