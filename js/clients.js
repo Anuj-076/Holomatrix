@@ -1,9 +1,9 @@
-/* Clients (people who need help): /clients/find-a-client (premium list) and /clients/become-a-client (free request form) */
+/* Clients: /clients/find-a-client (only people with the "Find clients" permission) and /clients/become-a-client (free for everyone) */
 (function () {
   'use strict';
   const C = HoloCommon, esc = UI.esc;
   const view = document.getElementById('view'), $ = (s, r = document) => r.querySelector(s);
-  let me = null, premium = false, ready = null;
+  let me = null, canFind = false;
 
   const loginGate = msg => '<div class="box cl-gate"><h3>Log in required</h3><p>' + msg + '</p><div class="row"><a class="btn btn-primary btn-sm" href="/login?next=' + encodeURIComponent(location.pathname) + '">Log in</a><a class="btn btn-ghost btn-sm" href="/signup">Sign up</a></div></div>';
 
@@ -14,19 +14,15 @@
     ib.startWith(b.dataset.chat);
   });
 
-  /* ---------- Find a client (premium) ---------- */
+  /* ---------- Find a client ---------- */
   async function find() {
-    if (!me) { view.innerHTML = loginGate('Log in to find clients you can help.'); return; }
-    if (!premium) {
-      view.innerHTML = '<div class="box cl-gate"><h3>🔒 Premium feature</h3><p>Find a client is for subscribed helpers. Subscribe to read requests from people who need help and offer your support. Need help yourself? Posting a request is free.</p><div class="row"><a class="btn btn-primary btn-sm" href="/funds/subscribe">View packs</a><a class="btn btn-ghost btn-sm" href="/clients/become-a-client">Become a client (free)</a></div></div>';
-      return;
-    }
+    if (!me) { view.innerHTML = loginGate('Log in to continue.'); return; }
     view.innerHTML = '<div class="empty">Loading…</div>';
     const { data, error } = await sb.from('client_profiles').select('*').eq('visible', true).eq('status', 'approved').eq('request_status', 'open').order('created_at', { ascending: false });
     if (error) { view.innerHTML = '<div class="empty">Could not load requests.</div>'; return; }
     const all = (data || []).filter(c => c.user_id !== me.user.id);
     if (!all.length) {
-      view.innerHTML = '<div class="cl-empty"><div><div class="ce-ico">🛟</div><h3>No client requests right now</h3><p>When people who need help post a request, it will appear here. Please check back soon.</p><a class="btn btn-ghost btn-sm" href="/clients/become-a-client">Need help yourself? Become a client</a></div></div>';
+      view.innerHTML = '<div class="cl-empty"><div><div class="ce-ico">🛟</div><h3>No client requests right now</h3><p>When people who need help post a request, it will appear here. Please check back soon.</p></div></div>';
       return;
     }
     let field = 'all', urg = 'all', term = '';
@@ -60,7 +56,7 @@
     const open = m && m.request_status !== 'closed';
 
     view.innerHTML = '<div class="form">' +
-      (m ? '<div class="rq ' + (open ? 'open' : 'closed') + '"><div><b>' + (open ? '✅ Your request is open' : 'Your request is closed') + '</b><small>' + (open ? (m.helpers_count ? m.helpers_count + ' helper' + (m.helpers_count > 1 ? 's are' : ' is') + ' already talking to you. ' : '') + 'Subscribed helpers can see it. Once you have found help, close it so other helpers are not confused.' : 'Helpers cannot see it. Reopen it if you still need help.') + '</small>' + (m.uid ? '<small>Your request link: <a style="color:var(--accent)" href="/clients/find-a-client/' + esc(m.uid) + '">/clients/find-a-client/' + esc(m.uid) + '</a></small>' : '') + '</div><button class="btn ' + (open ? 'btn-primary' : 'btn-ghost') + ' btn-sm" id="toggle">' + (open ? 'I found help — close my request' : 'Reopen my request') + '</button></div>' : '') +
+      (m ? '<div class="rq ' + (open ? 'open' : 'closed') + '"><div><b>' + (open ? '✅ Your request is open' : 'Your request is closed') + '</b><small>' + (open ? (m.helpers_count ? m.helpers_count + ' helper' + (m.helpers_count > 1 ? 's are' : ' is') + ' already talking to you. ' : '') + 'Approved helpers can see it. Once you have found help, close it so others are not confused.' : 'Helpers cannot see it. Reopen it if you still need help.') + '</small>' + (m.uid ? '<small>Your request link: <a style="color:var(--accent)" href="/clients/find-a-client/' + esc(m.uid) + '">/clients/find-a-client/' + esc(m.uid) + '</a></small>' : '') + '</div><button class="btn ' + (open ? 'btn-primary' : 'btn-ghost') + ' btn-sm" id="toggle">' + (open ? 'I found help — close my request' : 'Reopen my request') + '</button></div>' : '') +
 
       '<div class="fsec"><h3>1. What do you need?</h3><p class="hint">Describe your need in one short line.</p>' +
       '<div class="field"><label>What do you need? *</label><input class="input" id="need" maxlength="120" placeholder="e.g. Guidance for my physics research paper" value="' + esc(p.headline || '') + '"></div>' +
@@ -83,7 +79,7 @@
       '<label class="hint">Other social media (optional)</label><div id="srows"></div><button type="button" id="sadd" style="height:36px;border:1px solid var(--border);border-radius:10px;padding:0 14px;width:max-content;margin:4px 0 14px">+ Add link</button>' +
       '<div class="field"><label>Anything else helpers should know (optional)</label><textarea class="input" id="extra" maxlength="1500">' + esc(p.extra || '') + '</textarea></div></div>' +
 
-      '<div class="warn-box"><b>⚠ Before you post.</b>\nYour request is visible to subscribed helpers while it is open. Holomatrix is not responsible for any payment, agreement, quality of help, advice, loss or scam. We do not verify helpers, so check them yourself. Never pay strangers in advance and never share passwords, one-time codes or bank details. When you have found help, close your request. Requests that are illegal, harmful, or ask someone to cheat or break rules will be removed.</div>' +
+      '<div class="warn-box"><b>⚠ Before you post.</b>\nYour request is visible to approved helpers while it is open. Holomatrix is not responsible for any payment, agreement, quality of help, advice, loss or scam. We do not verify helpers, so check them yourself. Never pay strangers in advance and never share passwords, one-time codes or bank details. When you have found help, close your request. Requests that are illegal, harmful, or ask someone to cheat or break rules will be removed.</div>' +
       (m ? '' : '<label class="chk"><input type="checkbox" id="agree"><span>I agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>, and I understand Holomatrix is not responsible for payments or agreements between clients and helpers.</span></label>') +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"><button class="btn btn-primary" id="save">' + (m ? 'Save changes' : 'Post my request') + '</button>' + (m ? '<button class="btn btn-danger btn-sm" id="del">Delete request</button>' : '') + '</div></div>';
 
@@ -128,9 +124,9 @@
     };
   }
 
-  ready = (async () => { me = await Auth.access(); premium = me ? await C.premium() : false; })();
-  C.tabs({
-    el: document.getElementById('tabs'), items: [['find', 'Find a client', true], ['become', 'Become a client']],
-    onChange: async id => { await ready; view.innerHTML = '<div class="empty">Loading…</div>'; id === 'find' ? find() : become(); }
-  });
+  (async () => {
+    me = await Auth.access(); canFind = !!(me && me.can('find_clients'));
+    const items = canFind ? [['find', 'Find a client'], ['become', 'Become a client']] : [['become', 'Become a client']];
+    C.tabs({ el: document.getElementById('tabs'), items, onChange: id => { view.innerHTML = '<div class="empty">Loading…</div>'; id === 'find' ? find() : become(); } });
+  })();
 })();
