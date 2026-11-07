@@ -3,12 +3,16 @@
   var d = document.documentElement;
   d.classList.add('js');
 
-  /* Never let the page be zoomed out or pushed sideways on phones */
+  /* Never let the page be zoomed out or pushed sideways on phones.
+     Also: the page-transition strips now overlap, so no thin white seam can appear on any screen. */
   try {
     var vp = document.querySelector('meta[name="viewport"]');
     if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover');
     var fx = document.createElement('style');
-    fx.textContent = 'html,body{max-width:100%;overflow-x:hidden}html,body{overflow-x:clip}';
+    fx.textContent = 'html,body{max-width:100%;overflow-x:hidden}html,body{overflow-x:clip}' +
+      '#vt{overflow:hidden}' +
+      '#vt .vt-col{flex:0 0 calc(100% / 6 + 2px)!important;margin-right:-2px!important;box-shadow:none!important;border:0!important;backface-visibility:hidden;-webkit-backface-visibility:hidden}' +
+      'html.vt-cover:not(.vt-out) #vt .vt-col,html.vt-in:not(.vt-out) #vt .vt-col{transform:scaleY(1.03)!important}';
     document.head.appendChild(fx);
   } catch (e) {}
 
