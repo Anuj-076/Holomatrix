@@ -10,14 +10,15 @@
   window.HoloInboxReady = new Promise(r => { inboxRes = r; });
 
   if (!document.querySelector('link[href="/css/extras.css"]')) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/css/extras.css'; document.head.appendChild(l); }
-  const cap = document.createElement('style');
-  cap.textContent = '.hn-cap{padding:8px 12px 7px;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);border-bottom:1px solid var(--border);margin-bottom:4px}';
-  document.head.appendChild(cap);
+  // highlights important words (cyan + royal-blue underline) on content pages
+  if (!document.querySelector('script[src="/js/auto-hl.js"]')) { const s = document.createElement('script'); s.src = '/js/auto-hl.js'; s.defer = true; document.body.appendChild(s); }
 
   const seg = h => '/' + (String(h || '').split('#')[0].split('?')[0].split('/').filter(Boolean)[0] || '');
+  const pathOf = h => { try { return new URL(h, location.origin).pathname.replace(/\/$/, ''); } catch (e) { return ''; } };
+  const here = () => location.pathname.replace(/\/$/, '');
   const prem = p => p ? '<em class="prem">★ Premium</em>' : '';
   const shown = c => c.visible !== false && (!c.perm || (access && access.can(c.perm)));
-  const socials = () => { const l = (Site.content && Site.content.links) || {}; return [l['social.instagram'] || 'https://www.instagram.com/holomatrix_consulting/', l['social.linkedin'] || 'https://www.linkedin.com/company/holomatrixconsulting']; };
+  const socials = () => { const l = (Site.content && Site.content.links) || {}; return [l['social.instagram'] || 'https://www.instagram.com/holomatrix_org/', l['social.linkedin'] || 'https://www.linkedin.com/company/holomatrix/']; };
   const socHtml = () => socials().map(u => '<a href="' + esc(safe(u)) + '" target="_blank" rel="noopener noreferrer" aria-label="' + esc(HoloIcons.label(HoloIcons.detect(u))) + '"><span class="ico">' + HoloIcons.svg(HoloIcons.detect(u)) + '</span></a>').join('');
 
   if (host) {
@@ -32,12 +33,14 @@
   }
 
   function renderNav() {
-    const nav = C.getNav().filter(shown), sig = JSON.stringify(nav);
+    const nav = C.getNav().filter(shown), sig = JSON.stringify(nav) + here();
     if (sig === navSig) return; navSig = sig;
     $('#hdr-nav').innerHTML = nav.map((it, idx) => {
       const kids = (it.children || []).filter(shown), right = idx >= nav.length - 2 ? ' r' : '';
-      return '<div class="hn-item"><a class="hn-top' + (seg(it.href) === seg(location.pathname) && seg(it.href) !== '/' ? ' cur' : '') + '" href="' + esc(safe(it.href)) + '"' + (kids.length ? ' aria-haspopup="true" aria-expanded="false"' : '') + '><span>' + esc(it.label) + '</span>' + (kids.length ? CARET : '') + '</a>' +
-        (kids.length ? '<div class="hn-drop' + right + '"><div class="hn-card">' + (it.premium ? '<div class="hn-cap">★ Premium features</div>' : '') + kids.map(c => '<a href="' + esc(safe(c.href)) + '"><span>' + esc(c.label) + '</span>' + prem(c.premium) + '</a>').join('') + '</div></div>' : '') + '</div>';
+      const cur = kids.some(c => pathOf(c.href) === here()) || (pathOf(it.href) === here() && here() !== '');
+      return '<div class="hn-item"><a class="hn-top' + (cur ? ' cur' : '') + '" href="' + esc(safe(it.href)) + '"' + (kids.length ? ' aria-haspopup="true" aria-expanded="false"' : '') + '><span>' + esc(it.label) + '</span>' + (kids.length ? CARET : '') + '</a>' +
+        (kids.length ? '<div class="hn-drop' + right + '"><div class="hn-card">' + (it.premium ? '<div class="hn-cap">★ Premium features</div>' : '') +
+          kids.map(c => '<a href="' + esc(safe(c.href)) + '"' + (pathOf(c.href) === here() ? ' class="cur" aria-current="page"' : '') + '><span>' + esc(c.label) + '</span>' + prem(c.premium) + '</a>').join('') + '</div></div>' : '') + '</div>';
     }).join('');
   }
 
@@ -84,8 +87,8 @@
       if (!a) { renderProfile(); inboxRes(null); return; }
       try { const { data } = await sb.from('profiles').select('username,full_name,avatar_url,profile_completed').eq('id', a.user.id).maybeSingle(); profile = data; } catch (e) {}
       renderProfile();
-      const here = location.pathname.replace(/\/$/, '') || '/';
-      if (profile && profile.profile_completed === false && !['/welcome', '/login', '/signup', '/privacy', '/terms'].includes(here)) { UI.go('/welcome?next=' + encodeURIComponent(location.pathname + location.search)); return; }
+      const loc = location.pathname.replace(/\/$/, '') || '/';
+      if (profile && profile.profile_completed === false && !['/welcome', '/login', '/signup', '/privacy', '/terms'].includes(loc)) { UI.go('/welcome?next=' + encodeURIComponent(location.pathname + location.search)); return; }
       const s = document.createElement('script'); s.src = '/js/inbox.js';
       s.onload = () => inboxRes(window.HoloInbox || null); s.onerror = () => inboxRes(null);
       document.body.appendChild(s);
