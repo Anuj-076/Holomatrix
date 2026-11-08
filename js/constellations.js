@@ -1,5 +1,5 @@
 /* Hero constellations: Orion (from the reference picture), Taurus, Canis Major, both Dippers, Cassiopeia. No names or labels.
-   Laptop: move the mouse through them and they scatter. Stars that drift near the black hole fall in (gravity).
+   Laptop: move the mouse through them and they scatter. Stars that drift near the black hole are pulled in and swallowed.
    Left alone for 90 seconds they re-form, and the swallowed stars come back out of the black hole.
    Phone: they just drift gently. */
 (function () {
@@ -33,14 +33,14 @@
       s: [[0.153, 59.150, 2.3], [0.675, 56.537, 2.2], [0.945, 60.717, 2.5], [1.430, 60.235, 2.7], [1.907, 63.670, 3.4]],
       l: [[0, 1], [1, 2], [2, 3], [3, 4]] }
   ];
-  // boxes [x, y, w, h] as fractions of the hero. Order: Orion, Taurus, Canis Major, Big Dipper, Little Dipper, Cassiopeia
-  const BOX_L = [[.03, .70, .22, .28], [.28, .55, .26, .34], [.50, .60, .11, .34], [.03, .05, .26, .20], [.33, .05, .16, .24], [.52, .05, .15, .12]];
-  const BOX_P = [[.62, .27, .32, .34], [.04, .64, .52, .20], [.64, .68, .30, .26], [.04, .04, .46, .15], [.58, .03, .38, .19], [.06, .30, .42, .10]];
+  // boxes [x, y, w, h] as fractions of the hero. Order: Orion, Taurus, Canis Major, Big Dipper, Little Dipper, Cassiopeia. None overlap.
+  const BOX_L = [[.015, .09, .15, .31], [.17, .74, .27, .24], [.47, .73, .10, .25], [.19, .09, .22, .17], [.43, .09, .12, .25], [.58, .09, .12, .12]];
+  const BOX_P = [[.04, .74, .24, .22], [.31, .80, .40, .14], [.75, .74, .21, .20], [.02, .095, .38, .11], [.74, .20, .23, .15], [.62, .095, .34, .07]];
 
   let W = 0, H = 0, stars = [], lines = [], bg = [], mode = 'formed', lastTouch = 0, ret0 = 0, tick = 0, visible = true, spr = null, last = 0;
   const mouse = { x: -9999, y: -9999 }, col = { a: '#4de1ff', t: '#ffffff' };
 
-  /* black hole = the logo circle; its centre and radius relative to the hero (follows the page parallax) */
+  /* black hole = the logo circle; its centre and radius relative to the hero */
   function bh() {
     const c = document.querySelector('.bh-core'); if (!c) return null;
     const hr = hero.getBoundingClientRect(), cr = c.getBoundingClientRect(); if (!cr.width) return null;
@@ -76,11 +76,11 @@
       const ox = b[0] * W + (bw - w * k) / 2, oy = b[1] * H + (bh2 - h * k) / 2;
       pts.forEach((p, i) => {
         const hx = ox + (p.x - x0) * k, hy = oy + (y1 - p.y) * k, o = old[base + i];
-        stars.push({ hx, hy, x: o ? o.x : hx, y: o ? o.y : hy, vx: o ? o.vx : 0, vy: o ? o.vy : 0, g: gi, dead: o ? o.dead : false, fade: o ? o.fade : 1, r: Math.max(1.1, Math.min(4, 1.3 + (4.6 - p.mag) * 0.5)), ph: Math.random() * 6.28 });
+        stars.push({ hx, hy, x: o ? o.x : hx, y: o ? o.y : hy, vx: o ? o.vx : 0, vy: o ? o.vy : 0, g: gi, dead: o ? o.dead : false, fade: o ? o.fade : 1, r: Math.max(1.5, Math.min(5, 1.7 + (4.6 - p.mag) * 0.55)), ph: Math.random() * 6.28 });
       });
       cn.l.forEach(l => lines.push([base + l[0], base + l[1]]));
     });
-    if (!bg.length) bg = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 1.1 + 0.3, p: Math.random() * 6.28 }));
+    if (!bg.length) bg = Array.from({ length: 80 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 1.2 + 0.3, p: Math.random() * 6.28 }));
   }
   function resize() {
     const r = hero.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
@@ -115,12 +115,12 @@
         s.vx *= Math.pow(0.5, dt); s.vy *= Math.pow(0.5, dt);
 
         if (B) {   // gravity: near the black hole a star spirals in and is swallowed
-          const gx = B.x - s.x, gy = B.y - s.y, dd = Math.hypot(gx, gy) || 1, gr = B.r * 4.2;
+          const gx = B.x - s.x, gy = B.y - s.y, dd = Math.hypot(gx, gy) || 1, gr = B.r * 3.0, k = B.r / 60;
           if (dd < gr) {
-            const a = 900 * Math.pow(1 - dd / gr, 1.2) + 4000 * Math.pow(B.r / Math.max(dd, B.r * 0.5), 2);
+            const a = k * (900 * Math.pow(1 - dd / gr, 1.2) + 4000 * Math.pow(B.r / Math.max(dd, B.r * 0.5), 2));
             s.vx += (gx / dd) * a * dt + (-gy / dd) * a * 0.35 * dt;
             s.vy += (gy / dd) * a * dt + (gx / dd) * a * 0.35 * dt;
-            const v = Math.hypot(s.vx, s.vy); if (v > 900) { s.vx *= 900 / v; s.vy *= 900 / v; }
+            const v = Math.hypot(s.vx, s.vy); if (v > 900 * k) { s.vx *= 900 * k / v; s.vy *= 900 * k / v; }
             s.fade = Math.max(0, Math.min(1, (dd - B.r * 0.8) / (B.r * 1.1)));
             if (dd < B.r * 0.92) { s.dead = true; window.dispatchEvent(new Event('holo:bh-eat')); continue; }
           } else s.fade = Math.min(1, s.fade + dt * 2);
@@ -137,19 +137,19 @@
     ctx.fillStyle = col.t;
     bg.forEach(b => { ctx.globalAlpha = 0.15 + 0.3 * Math.abs(Math.sin(t * 0.6 + b.p)); ctx.fillRect(b.x * W, b.y * H, b.r, b.r); });
     const ca = mode === 'formed' ? 1 : mode === 'ret' ? Math.min(1, (now - ret0) / 6000) : 0;
-    ctx.lineWidth = 1.2; ctx.strokeStyle = col.a;
+    ctx.lineWidth = 1.3; ctx.strokeStyle = col.a;
     if (ca < 1) {
       for (let i = 0; i < stars.length; i++) { if (stars[i].dead) continue; for (let j = i + 1; j < stars.length; j++) {
         if (stars[j].dead) continue;
         const d = Math.hypot(stars[i].x - stars[j].x, stars[i].y - stars[j].y);
-        if (d < 105) { ctx.globalAlpha = (1 - d / 105) * 0.3 * (1 - ca) * Math.min(stars[i].fade, stars[j].fade); ctx.beginPath(); ctx.moveTo(stars[i].x, stars[i].y); ctx.lineTo(stars[j].x, stars[j].y); ctx.stroke(); }
+        if (d < 120) { ctx.globalAlpha = (1 - d / 120) * 0.3 * (1 - ca) * Math.min(stars[i].fade, stars[j].fade); ctx.beginPath(); ctx.moveTo(stars[i].x, stars[i].y); ctx.lineTo(stars[j].x, stars[j].y); ctx.stroke(); }
       } }
     }
     if (ca > 0) {
-      ctx.lineWidth = 1.3;
+      ctx.lineWidth = 1.6;
       lines.forEach(l => {
         const a = stars[l[0]], b = stars[l[1]]; if (a.dead || b.dead) return;
-        ctx.globalAlpha = 0.6 * ca * Math.min(a.fade, b.fade); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        ctx.globalAlpha = 0.65 * ca * Math.min(a.fade, b.fade); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
       });
     }
     stars.forEach(s => {
