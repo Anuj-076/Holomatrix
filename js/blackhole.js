@@ -1,8 +1,9 @@
 /* Interstellar-style black hole, ray-traced on the GPU (WebGL).
    For every pixel a light ray is followed backwards through a Schwarzschild black hole (units: horizon radius = 1).
-   Where it crosses the thin accretion disk, light is added (with Doppler beaming, gravitational redshift and streaky dust texture).
+   Where it crosses the thin accretion disk, light is added (Doppler beaming, gravitational redshift, streaky dust texture).
+   The whole texture turns with the disk, so the bent light above and below the logo moves too.
    The shadow (captured rays) is transparent, so the logo underneath is the black circle in the middle.
-   Tuning numbers are the #defines at the top of the shader. */
+   Tuning numbers are the #defines at the top of the shader; rotation speed is "0.24 * uTime" in diskShade. */
 (function () {
   'use strict';
   const box = document.getElementById('bh'), cv = document.getElementById('bh-gl');
@@ -19,7 +20,7 @@ uniform float uFlare;
 uniform float uRoll;
 
 #define D 30.0        /* camera distance from the black hole */
-#define R_IN 3.0      /* inner edge of the disk (innermost stable orbit) */
+#define R_IN 3.0      /* inner edge of the disk */
 #define R_OUT 12.5    /* outer edge of the disk */
 #define EL 0.075      /* camera height above the disk plane (radians): more = more curved front band */
 #define EXPOSURE 2.6  /* overall brightness */
@@ -53,6 +54,12 @@ float fbm(vec3 p){
   }
   return s / 0.875;
 }
+float fbm2(vec3 p){
+  float s = 0.5 * vnoise(p);
+  p = p * 2.03 + vec3(1.7, 9.2, 3.1);
+  s += 0.25 * vnoise(p);
+  return s / 0.75;
+}
 
 /* white-hot -> cream -> peach -> orange -> rust -> dark brown */
 vec3 palette(float t){
@@ -81,14 +88,15 @@ vec4 diskShade(vec3 pos, vec3 nPh){
   float grav = sqrt(max(1.0 - 1.0 / r, 0.05));
   float g = dop * pow(grav, 0.6);
 
-  float om = 0.30 * inversesqrt(r);
-  float ang = th + om * uTime;
-  vec3 q1 = vec3(cos(ang) * 1.3, sin(ang) * 1.3, r * 3.4);
-  vec3 q2 = vec3(cos(ang * 2.0 + 1.3) * 2.6, sin(ang * 2.0 + 1.3) * 2.6, r * 10.5 + 7.3);
+  /* the texture turns with the disk (rigid rotation + a slow sliding wobble, so it never winds up) */
+  float ang = th + 0.24 * uTime + 0.35 * sin(0.21 * uTime + r * 0.75);
+  vec3 q1 = vec3(cos(ang) * 5.2, sin(ang) * 5.2, r * 2.0);
+  vec3 q2 = vec3(cos(ang + 1.3) * 10.0, sin(ang + 1.3) * 10.0, r * 5.5 + 7.3);
   float n1 = fbm(q1);
-  float n2 = fbm(q2);
-  float ln = 0.5 + 0.5 * sin(r * 44.0 + n1 * 7.0);
-  float tex = (0.30 + 1.0 * n1) * (0.50 + 0.70 * n2) * (0.55 + 0.60 * ln);
+  float n2 = fbm2(q2);
+  float ln = 0.5 + 0.5 * sin(r * 26.0 + n1 * 9.0 - uTime * 0.6);   /* thin rings, drifting inward */
+  float wv = 0.80 + 0.30 * sin(3.0 * ang + r * 1.3);               /* soft arms of light that travel around */
+  float tex = (0.30 + 1.0 * n1) * (0.50 + 0.70 * n2) * (0.62 + 0.55 * ln) * wv;
 
   float ro = R_OUT * (0.80 + 0.32 * n2);
   float eIn = smoothstep(R_IN, R_IN + 0.3, r);
