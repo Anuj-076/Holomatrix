@@ -51,9 +51,11 @@
             <a class="btn btn-ghost" href="/login" data-guest><span data-t="hero.cta2">Log in</span></a>
           </div>
         </div>
-        <div class="holo" aria-hidden="true">
-          <div class="ring"></div><div class="ring r2"></div><div class="ring r3"></div>
-          <div class="holo-core img-slot" data-img="brand.logo"><img src="/logo.jpg" alt=""></div>
+        <!-- Black hole: the logo is the black circle in the middle -->
+        <div class="bh" id="bh" aria-hidden="true">
+          <canvas class="bh-back" id="bh-back"></canvas>
+          <div class="bh-core img-slot" data-img="brand.logo"><img src="/logo.jpg" alt=""></div>
+          <canvas class="bh-front" id="bh-front"></canvas>
         </div>
       </div>
       <a class="scroll-cue" href="#intro-sec"><span data-t="hero.scroll">Scroll</span><i></i></a>
@@ -61,10 +63,10 @@
 
     <section class="hi" id="intro-sec" data-section="intro" data-label="Holomatrix introduction"><div class="wide" id="hm-intro"></div></section>
 
-    <section class="sheet" id="about" data-section="about" data-label="Founder & team">
+    <section class="sheet" id="about" data-section="about" data-label="About the Founder & team">
       <div class="wide">
         <div class="reveal">
-          <p class="kicker" data-t="about.kicker">About</p>
+          <p class="kicker" data-t="about.kicker">About The Founder</p>
           <h2 class="scrub" data-t="about.statement" data-multiline data-ph="Write your big statement here"></h2>
         </div>
         <div class="owner" id="owner">
@@ -77,7 +79,7 @@
             <ul class="ow-pts">
               <li><span class="hlu" data-t="owner.p0.a">Youngest Indian Fellow of the Royal Astronomical Society</span><span data-t="owner.p0.b">, London (</span><span class="hlu" data-t="owner.p0.c">F.R.A.S.</span><span data-t="owner.p0.d">): Nominated by</span> <span class="hlu" data-t="owner.p0.e">Former Astronomer Royal and Cambridge University Astrophysicist, Sir Lord Martin Rees</span></li>
               <li><span class="hlu" data-t="owner.p1.a">Youngest Delegate</span> <span data-t="owner.p1.b">at an International Scientific Conference in Dubai</span></li>
-              <li><span data-t="owner.p2.a">Published a Paper in</span> <a class="hlu" href="#" target="_blank" rel="noopener noreferrer" data-link="owner.paper" data-label="Founder: Springer Nature paper link"><span data-t="owner.p2.b">Springer Nature</span></a></li>
+              <li><span data-t="owner.p2.a">Published a Paper in</span> <a class="hlu" href="https://link.springer.com/article/10.1007/s10686-026-10078-4" target="_blank" rel="noopener noreferrer" data-link="owner.paper" data-label="Founder: Springer Nature paper link"><span data-t="owner.p2.b">Springer Nature</span></a></li>
               <li><span data-t="owner.p3.a" data-ph="Add a new point about Amal"></span></li>
               <li><span data-t="owner.p4.a" data-ph="Add another point about Amal"></span></li>
             </ul>
@@ -179,6 +181,7 @@
   <script src="/js/holo-extra.js"></script>
   <script src="/js/landing.js"></script>
   <script src="/js/landing-holo.js"></script>
+  <script src="/js/blackhole.js"></script>
   <script src="/js/constellations.js"></script>
   <script src="/js/intro-fix.js"></script>
   <script src="/js/intro.js"></script>
