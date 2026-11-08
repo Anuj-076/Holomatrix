@@ -1,108 +1,268 @@
-/* Black hole behind the logo: bent light above and below, a tilted glowing disk, a thin bright ring.
-   The logo is the black circle in the middle. Colours follow the reference: white-hot → cream → orange → copper → brown.
-   Stars swallowed by the black hole (see constellations.js) make the ring flash. */
+/* Interstellar-style black hole, ray-traced on the GPU (WebGL).
+   For every pixel a light ray is followed backwards through a Schwarzschild black hole (units: horizon radius = 1).
+   Where it crosses the thin accretion disk, light is added (with Doppler beaming, gravitational redshift and streaky dust texture).
+   The shadow (captured rays) is transparent, so the logo underneath is the black circle in the middle.
+   Tuning numbers are the #defines at the top of the shader. */
 (function () {
   'use strict';
-  const box = document.getElementById('bh'); if (!box) return;
-  const bk = document.getElementById('bh-back'), fr = document.getElementById('bh-front');
-  const bx = bk.getContext('2d'), fx = fr.getContext('2d');
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const TAU = Math.PI * 2, TILT = 0.1;
-  let S = 0, R = 0, cx = 0, cy = 0, dpr = 1, visible = true, flare = 0, last = 0, GB = [], GF = [];
-  let seed = 11; const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  const box = document.getElementById('bh'), cv = document.getElementById('bh-gl');
+  if (!box || !cv) return;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, coarse = matchMedia('(pointer: coarse)').matches;
 
-  const PAL = [[0, [255, 252, 246]], [0.22, [255, 226, 190]], [0.5, [238, 160, 100]], [0.78, [176, 98, 58]], [1, [96, 56, 40]]];
-  const pal = u => { u = Math.max(0, Math.min(1, u)); for (let i = 1; i < PAL.length; i++) if (u <= PAL[i][0]) { const a = PAL[i - 1], b = PAL[i], k = (u - a[0]) / (b[0] - a[0]); return [0, 1, 2].map(j => Math.round(a[1][j] + (b[1][j] - a[1][j]) * k)); } return PAL[PAL.length - 1][1]; };
-  const rgba = (c, a) => 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')';
+  const VS = 'attribute vec2 a;void main(){gl_Position=vec4(a,0.0,1.0);}';
+  const FS = `
+precision highp float;
+uniform vec2 uRes;
+uniform float uTime;
+uniform float uRpx;
+uniform float uFlare;
+uniform float uRoll;
 
-  const UP = [], LO = [], RB = [];
-  for (let i = 0; i < 46; i++) { const u = i / 45; UP.push({ u, w: 0.7 + rnd() * 1.9, a: (0.12 + Math.pow(1 - u, 1.15) * 0.85) * (0.55 + rnd() * 0.45), d: [10 + rnd() * 70, 3 + rnd() * 34], sp: 10 + rnd() * 26, ph: rnd() * 200, ext: 0.1 + u * 0.4 }); }
-  for (let i = 0; i < 20; i++) { const u = i / 19; LO.push({ u, w: 0.7 + rnd() * 1.4, a: (0.1 + Math.pow(1 - u, 1.3) * 0.5) * (0.5 + rnd() * 0.5), d: [8 + rnd() * 50, 4 + rnd() * 30], sp: 8 + rnd() * 18, ph: rnd() * 200 }); }
-  for (let j = 0; j < 32; j++) { const v = -1 + 2 * (j / 31) + (rnd() - 0.5) * 0.05; RB.push({ v, w: 0.6 + rnd() * 1.5, a: 0.3 + rnd() * 0.65, d: [18 + rnd() * 100, 4 + rnd() * 56], sp: 16 + rnd() * 70, ph: rnd() * 300, pts: [] }); }
+#define D 30.0        /* camera distance from the black hole */
+#define R_IN 3.0      /* inner edge of the disk (innermost stable orbit) */
+#define R_OUT 12.5    /* outer edge of the disk */
+#define EL 0.075      /* camera height above the disk plane (radians): more = more curved front band */
+#define EXPOSURE 2.6  /* overall brightness */
 
-  // the glowing disk: a tapered band tilted slightly, brightest next to the hole, whiter on the left
-  function bandGrad(c, v) {
-    const g = c.createLinearGradient(cx - 3.4 * R, 0, cx + 3.4 * R, 0), m = Math.pow(Math.abs(v), 1.1), brown = [120, 66, 44];
-    const mix = col => col.map((x, i) => Math.round(x + (brown[i] - x) * m));
-    [[0, [120, 70, 48], 0], [0.1, [186, 110, 70], 0.35], [0.24, [255, 196, 140], 0.85], [0.36, [255, 244, 232], 1], [0.5, [255, 250, 244], 1], [0.64, [255, 232, 206], 0.92], [0.76, [244, 168, 108], 0.7], [0.9, [160, 92, 58], 0.3], [1, [100, 60, 44], 0]]
-      .forEach(s => g.addColorStop(s[0], rgba(mix(s[1]), s[2] * (1 - 0.35 * m))));
-    return g;
+float hash3(vec3 p){
+  p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
+  p *= 17.0;
+  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+float vnoise(vec3 x){
+  vec3 i = floor(x);
+  vec3 f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash3(i);
+  float b = hash3(i + vec3(1.0, 0.0, 0.0));
+  float c = hash3(i + vec3(0.0, 1.0, 0.0));
+  float d = hash3(i + vec3(1.0, 1.0, 0.0));
+  float e = hash3(i + vec3(0.0, 0.0, 1.0));
+  float f1 = hash3(i + vec3(1.0, 0.0, 1.0));
+  float g = hash3(i + vec3(0.0, 1.0, 1.0));
+  float h = hash3(i + vec3(1.0, 1.0, 1.0));
+  return mix(mix(mix(a, b, f.x), mix(c, d, f.x), f.y), mix(mix(e, f1, f.x), mix(g, h, f.x), f.y), f.z);
+}
+float fbm(vec3 p){
+  float a = 0.5;
+  float s = 0.0;
+  for (int i = 0; i < 3; i++){
+    s += a * vnoise(p);
+    p = p * 2.03 + vec3(1.7, 9.2, 3.1);
+    a *= 0.5;
   }
+  return s / 0.875;
+}
 
-  function resize() {
-    S = box.clientWidth || 300; dpr = Math.min(devicePixelRatio || 1, 2); R = S * 0.12; cx = cy = S / 2;
-    [bk, fr].forEach(c => { c.width = Math.round(S * dpr); c.height = Math.round(S * dpr); });
-    bx.setTransform(dpr, 0, 0, dpr, 0, 0); fx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    GB = RB.map(r => bandGrad(bx, r.v)); GF = RB.map(r => bandGrad(fx, r.v));
-    RB.forEach(r => {
-      r.pts = [];
-      for (let k = 0; k <= 56; k++) {
-        const x = cx - 3.4 * R + (k / 56) * 6.8 * R, dx = Math.abs(x - cx), h = 0.2 * R * Math.exp(-Math.pow(dx / (1.55 * R), 1.25)) + 0.02 * R;
-        r.pts.push([x, cy + 0.8 * R + (x - cx) * TILT + r.v * h]);
+/* white-hot -> cream -> peach -> orange -> rust -> dark brown */
+vec3 palette(float t){
+  t = clamp(t, 0.0, 1.0);
+  vec3 c0 = vec3(0.10, 0.05, 0.04);
+  vec3 c1 = vec3(0.42, 0.20, 0.11);
+  vec3 c2 = vec3(0.80, 0.38, 0.18);
+  vec3 c3 = vec3(0.98, 0.66, 0.38);
+  vec3 c4 = vec3(1.00, 0.87, 0.70);
+  vec3 c5 = vec3(1.00, 0.98, 0.94);
+  if (t < 0.2) return mix(c0, c1, t / 0.2);
+  if (t < 0.4) return mix(c1, c2, (t - 0.2) / 0.2);
+  if (t < 0.6) return mix(c2, c3, (t - 0.4) / 0.2);
+  if (t < 0.8) return mix(c3, c4, (t - 0.6) / 0.2);
+  return mix(c4, c5, (t - 0.8) / 0.2);
+}
+
+/* light emitted by the disk where a ray crosses it. pos = point in the disk plane, nPh = direction the photon travels (towards the camera) */
+vec4 diskShade(vec3 pos, vec3 nPh){
+  float r = length(pos.xz);
+  float th = atan(pos.z, pos.x);
+  vec3 vdir = normalize(vec3(pos.z, 0.0, -pos.x));
+  float beta = min(sqrt(0.5 / max(r - 1.0, 0.2)), 0.75);
+  float gam = 1.0 / sqrt(1.0 - beta * beta);
+  float dop = 1.0 / (gam * (1.0 - beta * dot(vdir, nPh)));
+  float grav = sqrt(max(1.0 - 1.0 / r, 0.05));
+  float g = dop * pow(grav, 0.6);
+
+  float om = 0.30 * inversesqrt(r);
+  float ang = th + om * uTime;
+  vec3 q1 = vec3(cos(ang) * 1.3, sin(ang) * 1.3, r * 3.4);
+  vec3 q2 = vec3(cos(ang * 2.0 + 1.3) * 2.6, sin(ang * 2.0 + 1.3) * 2.6, r * 10.5 + 7.3);
+  float n1 = fbm(q1);
+  float n2 = fbm(q2);
+  float ln = 0.5 + 0.5 * sin(r * 44.0 + n1 * 7.0);
+  float tex = (0.30 + 1.0 * n1) * (0.50 + 0.70 * n2) * (0.55 + 0.60 * ln);
+
+  float ro = R_OUT * (0.80 + 0.32 * n2);
+  float eIn = smoothstep(R_IN, R_IN + 0.3, r);
+  float eOut = 1.0 - smoothstep(ro * 0.5, ro, r);
+  float prof = pow(R_IN / r, 1.45);
+  float boost = clamp(pow(g, 2.0), 0.45, 2.1);
+  float t = clamp(pow(R_IN / r, 0.72) * pow(g, 0.35), 0.0, 1.0);
+
+  vec3 col = palette(t) * prof * tex * boost * EXPOSURE;
+  float grey = smoothstep(0.62, 0.92, n2);
+  col = mix(col, vec3(dot(col, vec3(0.3333))) * 1.12, grey * 0.30);
+  col *= 1.0 + uFlare * 0.7 * (1.0 - smoothstep(3.0, 8.0, r));
+
+  float dens = eIn * eOut * clamp(0.22 + tex * 0.95, 0.0, 1.0);
+  float al = clamp(dens * 0.95, 0.0, 0.96);
+  return vec4(col * eIn * eOut, al);
+}
+
+void main(){
+  /* p = position in units of the shadow radius (the logo circle has radius 1) */
+  vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / uRpx;
+  float cr = cos(uRoll);
+  float sr = sin(uRoll);
+  vec2 q = vec2(cr * p.x - sr * p.y, sr * p.x + cr * p.y);
+
+  vec3 cam = vec3(0.0, D * sin(EL), D * cos(EL));
+  vec3 fw = -normalize(cam);
+  vec3 rt = normalize(cross(fw, vec3(0.0, 1.0, 0.0)));
+  vec3 up = cross(rt, fw);
+  float sinTs = (2.598076 / D) * sqrt(1.0 - 1.0 / D);
+  float ts = sinTs / sqrt(1.0 - sinTs * sinTs);
+  vec3 d = normalize(fw + ts * (q.x * rt + q.y * up));
+
+  /* the ray lives in a plane: spanned by e1 (towards the camera) and e2 */
+  vec3 e1 = normalize(cam);
+  float cp = dot(d, e1);
+  vec3 tg = d - e1 * cp;
+  float sp = length(tg);
+  vec3 e2 = (sp > 0.00001) ? tg / sp : normalize(cross(e1, vec3(0.0, 1.0, 0.0)));
+
+  /* u = 1/r, bent by gravity: u'' = -u + 1.5 u^2 */
+  float u = 1.0 / D;
+  float b = max(D * sp / sqrt(1.0 - u), 0.001);
+  float v = -sign(cp) * sqrt(max(0.0, 1.0 / (b * b) - u * u + u * u * u));
+
+  vec3 col = vec3(0.0);
+  float T = 1.0;
+  float phi = 0.0;
+  vec3 pPrev = cam;
+
+  for (int i = 0; i < 260; i++){
+    float r = 1.0 / u;
+    float h = clamp(0.03 * r, 0.014, 0.07);
+    float a1 = -u + 1.5 * u * u;
+    float un = u + v * h + 0.5 * a1 * h * h;
+    if (un >= 1.0) break;
+    if (un <= 0.0) break;
+    float a2 = -un + 1.5 * un * un;
+    float vn = v + 0.5 * (a1 + a2) * h;
+    float phin = phi + h;
+    float rn = 1.0 / un;
+    vec3 pN = rn * (cos(phin) * e1 + sin(phin) * e2);
+
+    if (pPrev.y * pN.y < 0.0){
+      float tt = pPrev.y / (pPrev.y - pN.y);
+      float um = mix(u, un, tt);
+      float vm = mix(v, vn, tt);
+      float rm = 1.0 / um;
+      float ph = mix(phi, phin, tt);
+      vec3 radial = cos(ph) * e1 + sin(ph) * e2;
+      vec3 tang = -sin(ph) * e1 + cos(ph) * e2;
+      vec3 hit = rm * radial;
+      float rr = length(hit.xz);
+      if (rr > R_IN && rr < R_OUT){
+        vec3 trav = normalize((-vm / (um * um)) * radial + rm * tang);
+        vec4 s = diskShade(hit, -trav);
+        col += T * s.rgb * s.a;
+        T *= (1.0 - s.a);
+        if (T < 0.03) break;
       }
-    });
+    }
+    phi = phin;
+    u = un;
+    v = vn;
+    pPrev = pN;
+    if (v < 0.0 && u < 1.0 / (R_OUT + 1.5)) break;
   }
 
-  function drawBand(c, G, t) {
-    c.lineCap = 'round'; c.lineJoin = 'round';
-    RB.forEach((r, j) => {
-      c.beginPath(); r.pts.forEach((p, k) => k ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]));
-      c.strokeStyle = G[j]; c.lineWidth = r.w;
-      c.setLineDash([]); c.globalAlpha = r.a * 0.28 * (1 + flare * 0.6); c.stroke();                     // smooth base
-      c.setLineDash(r.d.map(x => x * R / 60)); c.lineDashOffset = -(t * r.sp + r.ph) * R / 60;            // flowing texture
-      c.globalAlpha = Math.min(1, r.a * (1 + flare * 0.8)); c.stroke();
-    });
-    c.setLineDash([]); c.globalAlpha = 1;
+  /* thin bright photon ring hugging the shadow + a very soft warm haze */
+  float rp = length(p);
+  float x1 = (rp - 1.0) / 0.017;
+  float x2 = (rp - 1.0) / 0.085;
+  col += vec3(1.0, 0.97, 0.92) * exp(-x1 * x1) * 0.95;
+  col += vec3(1.0, 0.62, 0.30) * exp(-x2 * x2) * 0.12;
+  col += vec3(1.0, 0.55, 0.26) * 0.035 * exp(-max(rp - 1.0, 0.0) * 1.2) * step(1.0, rp);
+  col *= 1.0 + uFlare * 0.35;
+
+  /* fade out towards the edges of the canvas */
+  vec2 uv = gl_FragCoord.xy / uRes;
+  float edge = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y) * 1.6);
+  col *= smoothstep(0.0, 0.14, edge);
+
+  col = vec3(1.0) - exp(-col * 1.55);
+  float a = max(col.r, max(col.g, col.b));
+  gl_FragColor = vec4(col, a);
+}`;
+
+  let gl = null, prog = null, raf = 0, visible = true, flare = 0, scale = coarse ? 0.5 : 0.7, lastDraw = 0, frames = 0, slow = 0;
+  const U = {}, t0 = performance.now();
+
+  function fail() { box.classList.add('nogl'); }
+
+  function init() {
+    gl = cv.getContext('webgl', { alpha: true, premultipliedAlpha: true, antialias: false, depth: false, stencil: false, powerPreference: 'high-performance' }) || cv.getContext('experimental-webgl');
+    if (!gl) return false;
+    const hp = gl.getShaderPrecisionFormat && gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
+    if (!hp || !hp.precision) return false;
+    const mk = (type, src) => {
+      const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.warn('Black hole shader:', gl.getShaderInfoLog(s)); return null; }
+      return s;
+    };
+    const vs = mk(gl.VERTEX_SHADER, VS), fs = mk(gl.FRAGMENT_SHADER, FS);
+    if (!vs || !fs) return false;
+    prog = gl.createProgram(); gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { console.warn('Black hole link:', gl.getProgramInfoLog(prog)); return false; }
+    gl.useProgram(prog);
+    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    ['uRes', 'uTime', 'uRpx', 'uFlare', 'uRoll'].forEach(n => { U[n] = gl.getUniformLocation(prog, n); });
+    gl.clearColor(0, 0, 0, 0);
+    return true;
   }
 
-  function drawBack(t) {
-    bx.clearRect(0, 0, S, S); bx.globalCompositeOperation = 'lighter';
-    const gl = bx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 3.1);
-    gl.addColorStop(0, 'rgba(255,170,100,' + (0.1 + 0.08 * flare) + ')'); gl.addColorStop(1, 'rgba(255,170,100,0)');
-    bx.fillStyle = gl; bx.fillRect(0, 0, S, S);
-
-    UP.forEach(s => {                                           // light bent over the top of the hole
-      const r = R * (1.045 + Math.pow(s.u, 1.55) * 0.98), col = rgba(pal(s.u), 1);
-      bx.beginPath(); bx.arc(cx, cy, r, Math.PI - s.ext, TAU + s.ext);
-      bx.strokeStyle = col; bx.lineWidth = s.w; bx.setLineDash(s.d.map(x => x * R / 60)); bx.lineDashOffset = -(t * s.sp + s.ph) * R / 60;
-      bx.globalAlpha = Math.min(1, s.a * (1 + flare * 0.5)); bx.stroke();
-      if (s.u < 0.22) { bx.setLineDash([]); bx.lineWidth = 6; bx.globalAlpha = 0.05 + flare * 0.05; bx.stroke(); }
-    });
-    LO.forEach(s => {                                           // fainter light bent under the hole
-      const r = R * (1.06 + Math.pow(s.u, 1.3) * 0.55);
-      bx.beginPath(); bx.ellipse(cx, cy + 0.04 * R, r, r * 0.8, 0, 0.05, Math.PI - 0.05);
-      bx.strokeStyle = rgba(pal(0.25 + s.u * 0.75), 1); bx.lineWidth = s.w; bx.setLineDash(s.d.map(x => x * R / 60)); bx.lineDashOffset = (t * s.sp + s.ph) * R / 60;
-      bx.globalAlpha = Math.min(1, s.a * (1 + flare * 0.5)); bx.stroke();
-    });
-    bx.setLineDash([]); bx.globalAlpha = 1;
-    drawBand(bx, GB, t);
+  function size() {
+    if (!gl) return;
+    const cw = box.clientWidth || 600, ch = box.clientHeight || cw / 1.6;
+    cv.width = Math.max(64, Math.round(cw * scale)); cv.height = Math.max(40, Math.round(ch * scale));
+    gl.viewport(0, 0, cv.width, cv.height);
+    gl.uniform2f(U.uRes, cv.width, cv.height);
+    gl.uniform1f(U.uRpx, cv.width * 0.115);     // the logo circle is 23% of the box width, so its radius is 11.5%
+    gl.uniform1f(U.uRoll, 0.1);                  // slight tilt: right side lower, like the reference
   }
 
-  function drawFront(t) {
-    fx.clearRect(0, 0, S, S); fx.globalCompositeOperation = 'lighter';
-    fx.save(); fx.beginPath(); fx.arc(cx, cy, R, 0, TAU); fx.clip(); drawBand(fx, GF, t); fx.restore();   // disk crosses the logo's lower edge
-
-    const g = fx.createLinearGradient(0, cy - R, 0, cy + R);                                              // thin bright ring hugging the logo
-    g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.55, 'rgba(255,248,236,0.85)'); g.addColorStop(1, 'rgba(255,214,170,0.25)');
-    fx.beginPath(); fx.arc(cx, cy, R * 1.012, 0, TAU);
-    fx.strokeStyle = g; fx.lineWidth = Math.max(1.4, R * 0.03); fx.globalAlpha = Math.min(1, 0.9 + flare * 0.1); fx.stroke();
-    fx.strokeStyle = 'rgb(255,215,170)'; fx.lineWidth = R * 0.12; fx.globalAlpha = 0.1 + 0.12 * flare; fx.stroke();
-    fx.globalAlpha = 1;
+  function draw(t) {
+    if (!gl || gl.isContextLost()) return;
+    gl.uniform1f(U.uTime, t); gl.uniform1f(U.uFlare, flare);
+    gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
   function frame(now) {
-    if (visible && !document.hidden) {
-      const dt = Math.min(0.05, last ? (now - last) / 1000 : 0.016); last = now;
-      flare = Math.max(0, flare - dt * 1.2);
-      drawBack(now / 1000); drawFront(now / 1000);
-    } else last = 0;
-    requestAnimationFrame(frame);
+    raf = requestAnimationFrame(frame);
+    if (!visible || document.hidden) { lastDraw = 0; return; }
+    if (lastDraw && now - lastDraw < 30) return;           // 30 fps is plenty for slow motion
+    const dt = lastDraw ? (now - lastDraw) / 1000 : 0.033;
+    if (lastDraw) { frames++; if (now - lastDraw > 55) slow++; }
+    lastDraw = now; flare = Math.max(0, flare - dt * 1.2);
+    draw((now - t0) / 1000);
+    if (frames >= 24) { if (slow > 14 && scale > 0.34) { scale *= 0.82; size(); } frames = 0; slow = 0; }   // slow GPU: lower the resolution
   }
 
-  resize();
-  addEventListener('resize', () => { resize(); if (reduce) { drawBack(0); drawFront(0); } });
-  window.addEventListener('holo:bh-eat', () => { flare = Math.min(1.4, flare + 0.7); });   // a star fell in
-  if (reduce) { drawBack(0); drawFront(0); return; }
+  if (!init()) { fail(); return; }
+  box.classList.remove('nogl');
+  size();
+
+  cv.addEventListener('webglcontextlost', e => { e.preventDefault(); cancelAnimationFrame(raf); });
+  cv.addEventListener('webglcontextrestored', () => { if (init()) { size(); if (reduce) draw(0); else raf = requestAnimationFrame(frame); } else fail(); });
+  window.addEventListener('holo:bh-eat', () => { flare = Math.min(1.4, flare + 0.7); });     // a star fell in: the ring flashes
+
+  if ('ResizeObserver' in window) new ResizeObserver(() => { size(); if (reduce) draw(0); }).observe(box);
+  else addEventListener('resize', () => { size(); if (reduce) draw(0); });
+
+  if (reduce) { draw(0); return; }
   if ('IntersectionObserver' in window) new IntersectionObserver(es => { visible = es[0].isIntersecting; }).observe(box);
-  requestAnimationFrame(frame);
+  raf = requestAnimationFrame(frame);
 })();
