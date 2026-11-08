@@ -1,0 +1,20 @@
+/* Highlighted text: cyan + bold, underlined in royal blue */
+.hlu { color: var(--hl); font-weight: 700; text-decoration: underline; text-decoration-color: var(--ul); text-decoration-thickness: 2px; text-underline-offset: 5px; }
+
+/* Track Record: points with empty placeholders hidden until filled */
+.trk-list li { font-size: 1.02rem; }
+.trk-list li:not(:has(span:not(:empty))) { display: none; }
+body.editing .trk-list li { display: block !important; }
+
+/* Founder & CEO points */
+.ow-pts { list-style: none; display: grid; gap: 12px; margin: 4px 0 24px; max-width: 640px; }
+.ow-pts li { position: relative; padding-left: 26px; line-height: 1.7; color: var(--text); }
+.ow-pts li::before { content: ''; position: absolute; left: 4px; top: 0.72em; width: 8px; height: 8px; border-radius: 50%; background: var(--ul); }
+.ow-pts li:not(:has(a, span:not(:empty))) { display: none; }
+body.editing .ow-pts li { display: block !important; }
+.ow-pts a .ico { display: none !important; }
+
+/* On narrow screens the Track Record sits in a cyan box, so highlights turn dark there */
+@media (max-width: 900px) {
+  .trk .hlu { color: #04101c; text-decoration-color: #1b3aa8; }
+}
