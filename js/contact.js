@@ -8,17 +8,15 @@
   /* ============ AI support ============ */
   function ai() {
     const KEY = 'holo-ai-chat'; let hist = []; try { hist = JSON.parse(sessionStorage.getItem(KEY) || '[]'); } catch (e) {}
-    const chips = ['How do I sign up?', 'How do I subscribe?', 'How do I become a client?', 'How do I hire a client?', 'How do I contact the team?'];
-    root.innerHTML = '<div class="ai"><div class="ai-head"><div><b>Holomatrix AI support</b><small>Answers questions about this website. AI can make mistakes.</small></div><button class="btn btn-ghost btn-sm" id="aic">Clear</button></div>' +
-      '<div class="ai-msgs" id="aim"></div><div class="ai-chips" id="aich"></div>' +
-      '<form class="ai-form" id="aif" autocomplete="off"><input class="input" id="aii" maxlength="500" placeholder="Ask about the website…" required><button class="btn btn-primary btn-sm" id="ais">Send</button></form></div>';
+    root.innerHTML = '<div class="ai"><div class="ai-head"><div><b>Holomatrix AI support</b><small>Ask about Holomatrix or this website. AI can make mistakes.</small></div><button class="btn btn-ghost btn-sm" id="aic">Clear</button></div>' +
+      '<div class="ai-msgs" id="aim"></div>' +
+      '<form class="ai-form" id="aif" autocomplete="off"><input class="input" id="aii" maxlength="500" placeholder="Type your message…" required><button class="btn btn-primary btn-sm" id="ais">Send</button></form></div>';
     const box = document.getElementById('aim'), inp = document.getElementById('aii'), btn = document.getElementById('ais');
     const save = () => { try { sessionStorage.setItem(KEY, JSON.stringify(hist.slice(-20))); } catch (e) {} };
     const draw = typing => {
-      box.innerHTML = (hist.length ? '' : '<div class="cb them">Hi! 👋 Ask me anything about the Holomatrix website.</div>') +
+      box.innerHTML = (hist.length ? '' : '<div class="cb them">How can I assist you?</div>') +
         hist.map(m => '<div class="cb ' + (m.role === 'user' ? 'me' : 'them') + '">' + esc(m.content) + '</div>').join('') + (typing ? '<div class="cb them"><span class="typing"><i></i><i></i><i></i></span></div>' : '');
       box.scrollTop = box.scrollHeight;
-      document.getElementById('aich').innerHTML = hist.length ? '' : chips.map(c => '<button type="button">' + esc(c) + '</button>').join('');
     };
     async function send(text) {
       text = text.trim(); if (!text) return;
@@ -32,7 +30,6 @@
       hist.push({ role: 'assistant', content: reply }); save(); draw(false); btn.disabled = false; inp.focus();
     }
     document.getElementById('aif').onsubmit = e => { e.preventDefault(); const t = inp.value; inp.value = ''; send(t); };
-    document.getElementById('aich').onclick = e => { const b = e.target.closest('button'); if (b) send(b.textContent); };
     document.getElementById('aic').onclick = () => { hist = []; save(); draw(false); };
     draw(false);
   }
