@@ -53,7 +53,6 @@
         </div>
         <!-- Black hole: the logo is the black circle in the middle -->
         <div class="bh" id="bh" aria-hidden="true">
-          <div class="bh-bg"></div>
           <div class="bh-core img-slot" data-img="brand.logo"><img src="/logo.jpg" alt=""></div>
           <canvas class="bh-gl" id="bh-gl"></canvas>
           <div class="bh-fallback"></div>
@@ -74,7 +73,15 @@
         <div class="fd" id="owner">
           <!-- 4/7: founder photo + information -->
           <div class="fd-main reveal">
-            <div class="fd-photo img-slot" data-img="owner.photo" data-alt="Amal Pushp"><span class="initials" data-t="owner.initials">AP</span></div>
+            <div class="fd-left">
+              <div class="fd-photo img-slot" data-img="owner.photo" data-alt="Amal Pushp"><span class="initials" data-t="owner.initials">AP</span></div>
+              <div class="fd-links">
+                <a class="pill" href="https://www.linkedin.com/in/frasamalpushp/" data-icon="linkedin" target="_blank" rel="noopener noreferrer" data-link="owner.linkedin" data-label="Founder: LinkedIn"><span data-t="owner.linkedin.label">LinkedIn</span></a>
+                <a class="pill" href="https://x.com/AmalPushp4" data-icon="x" target="_blank" rel="noopener noreferrer" data-link="owner.x" data-label="Founder: X"><span data-t="owner.x.label">X</span></a>
+                <a class="pill" href="https://www.instagram.com/amalpjha2701/" data-icon="instagram" target="_blank" rel="noopener noreferrer" data-link="owner.instagram" data-label="Founder: Instagram"><span data-t="owner.instagram.label">Instagram</span></a>
+                <a class="pill" href="https://linktr.ee/amalpushp" data-icon="linktree" target="_blank" rel="noopener noreferrer" data-link="owner.linktree" data-label="Founder: Linktree"><span data-t="owner.linktree.label">Linktree</span></a>
+              </div>
+            </div>
             <div class="fd-info">
               <p class="kicker" data-t="owner.label">Founder &amp; CEO</p>
               <h3 class="owner-name" data-t="owner.name">Amal Pushp</h3>
@@ -83,23 +90,23 @@
               <ul class="fd-ach">
                 <li><i class="fd-ic">🔭</i><div class="fd-tx"><span class="hlu" data-t="owner.p0.a">Youngest Indian Fellow of the Royal Astronomical Society</span><span data-t="owner.p0.b">, London (</span><span class="hlu" data-t="owner.p0.c">F.R.A.S.</span><span data-t="owner.p0.d">): Nominated by</span> <span class="hlu" data-t="owner.p0.e">Former Astronomer Royal and Cambridge University Astrophysicist, Sir Lord Martin Rees</span></div></li>
                 <li><i class="fd-ic">🌐</i><div class="fd-tx"><span class="hlu" data-t="owner.p1.a">Youngest Delegate</span> <span data-t="owner.p1.b">at an International Scientific Conference in Dubai</span></div></li>
-                <li><i class="fd-ic">📄</i><div class="fd-tx"><span data-t="owner.p2.a">Published a Paper in</span> <a class="hlu" href="https://link.springer.com/article/10.1007/s10686-026-10078-4" target="_blank" rel="noopener noreferrer" data-link="owner.paper" data-label="Founder: Springer Nature paper link"><span data-t="owner.p2.b">Springer Nature</span></a></div></li>
+                <li><i class="fd-ic">📄</i><div class="fd-tx"><span data-t="owner.p2.a">Published a Paper in</span> <a class="hlink" href="https://link.springer.com/article/10.1007/s10686-026-10078-4" target="_blank" rel="noopener noreferrer" data-link="owner.paper" data-label="Founder: Springer Nature paper link"><span data-t="owner.p2.b">Springer Nature</span></a></div></li>
                 <li><i class="fd-ic">➕</i><div class="fd-tx"><span data-t="owner.p3.a" data-ph="Add a new point about Amal"></span></div></li>
                 <li><i class="fd-ic">➕</i><div class="fd-tx"><span data-t="owner.p4.a" data-ph="Add another point about Amal"></span></div></li>
               </ul>
-              <div class="owner-links">
-                <a class="pill" href="https://www.linkedin.com/in/frasamalpushp/" data-icon="linkedin" target="_blank" rel="noopener noreferrer" data-link="owner.linkedin" data-label="Founder: LinkedIn"><span data-t="owner.linkedin.label">LinkedIn</span></a>
-                <a class="pill" href="https://x.com/AmalPushp4" data-icon="x" target="_blank" rel="noopener noreferrer" data-link="owner.x" data-label="Founder: X"><span data-t="owner.x.label">X</span></a>
-                <a class="pill" href="https://www.instagram.com/amalpjha2701/" data-icon="instagram" target="_blank" rel="noopener noreferrer" data-link="owner.instagram" data-label="Founder: Instagram"><span data-t="owner.instagram.label">Instagram</span></a>
-                <a class="pill" href="https://linktr.ee/amalpushp" data-icon="linktree" target="_blank" rel="noopener noreferrer" data-link="owner.linktree" data-label="Founder: Linktree"><span data-t="owner.linktree.label">Linktree</span></a>
-              </div>
             </div>
           </div>
 
-          <!-- 3/7: Message from Founder (to be written later) -->
+          <!-- 3/7: Message from Founder -->
           <aside class="fd-msg reveal">
             <h3 class="fd-msg-h" data-t="fd.msg.h">Message from Founder</h3>
-            <div class="fd-msg-body" data-t="fd.msg.body" data-multiline data-ph="Write the message from the Founder here"></div>
+            <div class="fd-msg-body">
+              <p><span data-t="fd.msg.a">I founded Holomatrix with a simple conviction:</span> <span class="hlu" data-t="fd.msg.b">knowledge should not end with learning; it should lead to discovery.</span></p>
+              <p data-t="fd.msg.c" data-multiline>I envision an ecosystem where curiosity drives research, research inspires innovation, and knowledge is shared without boundaries. A place where independent thinking is encouraged, scientific integrity is upheld, and people are empowered to question, explore and push the frontiers of understanding.</p>
+              <p data-t="fd.msg.d" data-multiline>Holomatrix is the beginning of that vision. We are building it one idea, one collaboration and one discovery at a time.</p>
+              <p><span class="hlu" data-t="fd.msg.e">The pursuit of knowledge is our purpose.</span> <span class="hlu" data-t="fd.msg.f">Building an ecosystem for discovery is our mission.</span></p>
+              <p class="fd-sig" data-t="fd.msg.sig">— Amal Pushp</p>
+            </div>
           </aside>
         </div>
 
@@ -193,6 +200,7 @@
   <script src="/js/holo-extra.js"></script>
   <script src="/js/landing.js"></script>
   <script src="/js/landing-holo.js"></script>
+  <script src="/js/home-preview.js"></script>
   <script src="/js/blackhole.js"></script>
   <script src="/js/constellations.js"></script>
   <script src="/js/intro-fix.js"></script>
