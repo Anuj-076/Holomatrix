@@ -8,7 +8,7 @@
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/api/*", "/landing", "/signup", "/tabs", "/news/*", "/research/*", "/about/*", "/clients/*", "/funds/*", "/contact/*"]
+    "run_worker_first": ["/api/*", "/landing", "/signup", "/tabs", "/news/*", "/research/*", "/about/*", "/clients/*", "/funds/*", "/contact/*", "/orbit/*"]
   },
   "ai": { "binding": "AI" },
   "vars": {
