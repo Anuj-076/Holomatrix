@@ -1,4 +1,4 @@
-/* Contact us: /contact/ai-support and /contact/staff-support */
+/* Contact us: /contact/ai-support, /contact/staff-support and /contact/jobs */
 (function () {
   'use strict';
   const C = HoloCommon, esc = UI.esc, root = document.getElementById('ct');
@@ -32,6 +32,15 @@
     document.getElementById('aif').onsubmit = e => { e.preventDefault(); const t = inp.value; inp.value = ''; send(t); };
     document.getElementById('aic').onclick = () => { hist = []; save(); draw(false); };
     draw(false);
+  }
+
+  /* ============ Jobs ============ */
+  function jobs() {
+    root.innerHTML = '<div class="empty">Loading…</div>';
+    const go = () => window.HoloJobs.show(root);
+    if (window.HoloJobs) return go();
+    const s = document.createElement('script'); s.src = '/js/jobs.js'; s.onload = go; s.onerror = () => { root.innerHTML = '<div class="empty">Could not load the jobs.</div>'; };
+    document.body.appendChild(s);
   }
 
   /* ============ Staff support (live chat with the team) ============ */
@@ -116,7 +125,10 @@
   }
 
   C.tabs({
-    el: document.getElementById('tabs'), items: [['ai-support', 'AI support'], ['staff-support', 'Staff support']],
-    onChange: id => { if (cleanup) { cleanup(); cleanup = null; } root.onclick = null; root.innerHTML = '<div class="empty">Loading…</div>'; id === 'ai-support' ? ai() : staff(); }
+    el: document.getElementById('tabs'), items: [['ai-support', 'AI support'], ['staff-support', 'Staff support'], ['jobs', 'Jobs']],
+    onChange: id => {
+      if (cleanup) { cleanup(); cleanup = null; } root.onclick = null; root.innerHTML = '<div class="empty">Loading…</div>';
+      id === 'ai-support' ? ai() : id === 'jobs' ? jobs() : staff();
+    }
   });
 })();
