@@ -41,7 +41,7 @@
     if (!b || document.body.classList.contains('editing')) return;
     ev.preventDefault();
     const yes = await UI.confirm('Subscribers only', 'This research is for subscribers. Subscribe to a pack to read the full paper, its images, links and files.', { confirmText: 'See subscription packs', cancelText: 'Not now' });
-    if (yes) UI.go('/funds/subscribe');
+    if (yes) UI.go('/contribute/subscribe');
   });
 
   Site.ready.then(() => setTimeout(run, 300));
