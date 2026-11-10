@@ -4,10 +4,12 @@
       Not on: "Learn more", the top menu, buttons, pills, tabs, cards, tiles, icon-only links. */
 (function () {
   'use strict';
+  if (!document.querySelector('link[href="/css/holo3.css"]')) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/css/holo3.css'; document.head.appendChild(l); }   // the styles for highlights and ↗
+
   const KEYS = ['real research', 'research integrity', 'scientific integrity', 'intellectual honesty', 'methodological rigour', 'interdisciplinary', 'independent thinkers',
     'publication support', 'manuscript development', 'literature review', 'scientific writing', 'self-reinforcing', 'cannot guarantee', 'does not guarantee', 'no single fee',
     'Staff support', 'Contact us', 'Become a client', 'Find a client', 'Offer help', '13-digit', '6-digit code', 'unique username', 'approved helpers', 'subscribers',
-    'close your request', 'Privacy Policy', 'Terms of Service', 'admin team', 'Message from Founder', 'Track Record', 'peer review', 'Orbit'];
+    'close your request', 'Privacy Policy', 'Terms of Service', 'admin team', 'Message from Founder', 'Track Record', 'peer review'];
   const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const pat = KEYS.slice().sort((a, b) => b.length - a.length).map(esc).join('|');
   const rxTest = new RegExp('(?:^|[^A-Za-z0-9])(' + pat + ')(?![A-Za-z0-9])', 'i');
@@ -57,14 +59,14 @@
     });
   }
 
+  let timer = 0;
+  const obs = new MutationObserver(() => { clearTimeout(timer); timer = setTimeout(run, 250); });
   function run() {
     if (busy) return; busy = true; obs.disconnect();
     try { phrases(); arrows(); } catch (e) {}
     obs.observe(document.body, { childList: true, subtree: true });
     busy = false;
   }
-  let timer = 0;
-  const obs = new MutationObserver(() => { clearTimeout(timer); timer = setTimeout(run, 250); });
 
   new MutationObserver(() => { if (document.body.classList.contains('editing')) unwrap(); else run(); }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   document.addEventListener('holo:ready', run);
