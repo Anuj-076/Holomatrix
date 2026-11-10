@@ -9,8 +9,16 @@
   const timers = new Map();
   window.HoloInboxReady = new Promise(r => { inboxRes = r; });
 
+  /* every "Log out" (menu, phone menu, dashboard) asks first */
+  if (window.Auth && !Auth._so) {
+    Auth._so = true; const so = Auth.signOut.bind(Auth);
+    Auth.signOut = async function () {
+      const ok = await UI.confirm('Log out?', 'You will need to log in again to use your account.', { confirmText: 'Log out', cancelText: 'Cancel' });
+      if (ok) return so();
+    };
+  }
+
   if (!document.querySelector('link[href="/css/extras.css"]')) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/css/extras.css'; document.head.appendChild(l); }
-  // highlights important words (cyan + royal-blue underline) on content pages
   if (!document.querySelector('script[src="/js/auto-hl.js"]')) { const s = document.createElement('script'); s.src = '/js/auto-hl.js'; s.defer = true; document.body.appendChild(s); }
 
   const seg = h => '/' + (String(h || '').split('#')[0].split('?')[0].split('/').filter(Boolean)[0] || '');
@@ -72,7 +80,7 @@
     });
     document.addEventListener('click', e => { if (!host.contains(e.target)) closeAll(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
-    document.addEventListener('click', e => { if (e.target.closest('[data-logout]')) Auth.signOut(); });
+    document.addEventListener('click', e => { if (e.target.closest('[data-logout]')) { closeAll(); Auth.signOut(); } });
     const onScroll = () => $('#hdr').classList.toggle('scrolled', scrollY > 20);
     addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
