@@ -11,21 +11,32 @@
   C.BUDGET = [['paid', 'Paid'], ['free', 'Free / volunteer'], ['discuss', 'Open to discuss']];
   C.MODES = [['online', 'Online'], ['inperson', 'In person'], ['either', 'Online or in person']];
   C.QUALS = ['High school', 'Diploma', 'Associate degree', 'B.Sc', 'B.Tech / B.E.', 'B.A.', 'B.Com', 'BBA', 'B.Pharm', 'MBBS', 'LL.B', 'M.Sc', 'M.Tech / M.E.', 'M.A.', 'M.Com', 'MBA', 'M.Phil', 'Ph.D', 'Postdoctoral researcher', 'Professor', 'Certified professional', 'Self-taught'];
-  /* Team groups. The admin dropdown shows C.GROUPS; the About page shows one section per C.SECTIONS item.
-     A person in a combined group (e.g. "Management & Scientists") appears under both, with both tags. */
+  /* Team groups: Scientists, Management, Consultants. A person can have one, two or all three (stored like "Scientists & Management"). */
   C.SECTIONS = ['Scientists', 'Management', 'Consultants'];
   C.GROUPS = ['Scientists', 'Management', 'Consultants', 'Management & Scientists', 'Scientists & Consultants', 'Management & Consultants'];
 
   const sub = (base, list) => list.map(x => ({ label: x[1], href: base + '/' + x[0] }));
+  const JOBS = { label: 'Jobs', href: '/contact/jobs' };
   C.DEFAULT_NAV = [
     { id: 'news', label: 'News', href: '/news/all', visible: true, children: sub('/news', C.NEWS_CATS) },
     { id: 'research', label: 'Researches', href: '/research/all', premium: true, visible: true, children: sub('/research', C.RES_CATS) },
     { id: 'about', label: 'About us', href: '/about/holomatrix', visible: true, children: [{ label: 'About Holomatrix', href: '/about/holomatrix' }, { label: 'Holomatrix Team', href: '/about/holomatrix-team' }] },
     { id: 'clients', label: 'Client', href: '/clients/become-a-client', visible: true, children: [{ label: 'Find a client', href: '/clients/find-a-client', perm: 'find_clients' }, { label: 'Become a client', href: '/clients/become-a-client' }] },
-    { id: 'funds', label: 'Funds', href: '/funds/subscribe', visible: true, children: [{ label: 'Subscribe', href: '/funds/subscribe' }, { label: 'Donate', href: '/funds/donate' }] },
-    { id: 'contact', label: 'Contact us', href: '/contact/ai-support', visible: true, children: [{ label: 'AI support', href: '/contact/ai-support' }, { label: 'Staff support', href: '/contact/staff-support' }] }
+    { id: 'funds', label: 'Contribute', href: '/funds/subscribe', visible: true, children: [{ label: 'Subscribe', href: '/funds/subscribe' }, { label: 'Donate', href: '/funds/donate' }] },
+    { id: 'contact', label: 'Contact us', href: '/contact/ai-support', visible: true, children: [{ label: 'AI support', href: '/contact/ai-support' }, { label: 'Staff support', href: '/contact/staff-support' }, JOBS] }
   ];
-  C.getNav = () => { const n = window.Site && Site.content && Site.content.nav; return Array.isArray(n) && n.length ? n : C.DEFAULT_NAV; };
+  /* A menu saved earlier in Admin is upgraded on the fly: "Funds" shows as "Contribute", Jobs is added under Contact us, the old Orbit item is dropped. */
+  C.getNav = () => {
+    const n = window.Site && Site.content && Site.content.nav;
+    if (!(Array.isArray(n) && n.length)) return C.DEFAULT_NAV;
+    return n.filter(i => !(i && (i.id === 'orbit' || /^\/orbit/.test(i.href || '')))).map(i => {
+      if (!i) return i;
+      let o = i;
+      if (i.id === 'funds' && i.label === 'Funds') o = Object.assign({}, o, { label: 'Contribute' });
+      if (i.id === 'contact' && !(i.children || []).some(k => /\/contact\/jobs/.test(k.href || ''))) o = Object.assign({}, o, { children: (i.children || []).concat([JOBS]) });
+      return o;
+    });
+  };
 
   C.date = d => new Date(d).toLocaleDateString([], { dateStyle: 'medium' });
   C.time = d => new Date(d).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
@@ -63,7 +74,7 @@
       (full || !c.uid ? '' : '<a class="btn btn-ghost btn-sm" href="/clients/find-a-client/' + c.uid + '">View request</a>') + '</div></article>';
   };
 
-  /* Tabs driven by the address: /news/physics, /about/holomatrix-team ... (no page reload) */
+  /* Tabs driven by the address: /news/physics, /about/holomatrix-team, /contact/jobs ... (no page reload) */
   const SLUG = { find: 'find-a-client', become: 'become-a-client', staff: 'holomatrix-team' };
   const LEGACY = { 'staff-team': 'staff', 'hire-a-client': 'find' };
   C.tabs = function (o) {
