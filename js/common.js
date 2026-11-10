@@ -19,21 +19,26 @@
   const JOBS = { label: 'Jobs', href: '/contact/jobs' };
   C.DEFAULT_NAV = [
     { id: 'news', label: 'News', href: '/news/all', visible: true, children: sub('/news', C.NEWS_CATS) },
-    { id: 'research', label: 'Researches', href: '/research/all', premium: true, visible: true, children: sub('/research', C.RES_CATS) },
-    { id: 'about', label: 'About us', href: '/about/holomatrix', visible: true, children: [{ label: 'About Holomatrix', href: '/about/holomatrix' }, { label: 'Holomatrix Team', href: '/about/holomatrix-team' }] },
+    { id: 'research', label: 'Research', href: '/research/all', premium: true, visible: true, children: sub('/research', C.RES_CATS) },
+    { id: 'about', label: 'About', href: '/about/holomatrix', visible: true, children: [{ label: 'About Holomatrix', href: '/about/holomatrix' }, { label: 'Holomatrix Team', href: '/about/holomatrix-team' }] },
     { id: 'clients', label: 'Client', href: '/clients/become-a-client', visible: true, children: [{ label: 'Find a client', href: '/clients/find-a-client', perm: 'find_clients' }, { label: 'Become a client', href: '/clients/become-a-client' }] },
-    { id: 'funds', label: 'Contribute', href: '/funds/subscribe', visible: true, children: [{ label: 'Subscribe', href: '/funds/subscribe' }, { label: 'Donate', href: '/funds/donate' }] },
+    { id: 'funds', label: 'Contribute', href: '/contribute/subscribe', visible: true, children: [{ label: 'Subscribe', href: '/contribute/subscribe' }, { label: 'Donate', href: '/contribute/donate' }] },
     { id: 'contact', label: 'Contact us', href: '/contact/ai-support', visible: true, children: [{ label: 'AI support', href: '/contact/ai-support' }, { label: 'Staff support', href: '/contact/staff-support' }, JOBS] }
   ];
-  /* A menu saved earlier in Admin is upgraded on the fly: "Funds" shows as "Contribute", Jobs is added under Contact us, the old Orbit item is dropped. */
+  /* A menu saved earlier in Admin is upgraded on the fly: new names (Research, About, Contribute), /funds → /contribute addresses,
+     Jobs added under Contact us, the old Orbit item dropped. */
+  const fixHref = h => String(h || '').replace(/^\/funds(?=\/|$)/, '/contribute');
   C.getNav = () => {
     const n = window.Site && Site.content && Site.content.nav;
     if (!(Array.isArray(n) && n.length)) return C.DEFAULT_NAV;
     return n.filter(i => !(i && (i.id === 'orbit' || /^\/orbit/.test(i.href || '')))).map(i => {
       if (!i) return i;
-      let o = i;
-      if (i.id === 'funds' && i.label === 'Funds') o = Object.assign({}, o, { label: 'Contribute' });
-      if (i.id === 'contact' && !(i.children || []).some(k => /\/contact\/jobs/.test(k.href || ''))) o = Object.assign({}, o, { children: (i.children || []).concat([JOBS]) });
+      const o = Object.assign({}, i, { href: fixHref(i.href) });
+      if (Array.isArray(i.children)) o.children = i.children.map(k => k ? Object.assign({}, k, { href: fixHref(k.href) }) : k);
+      if (i.id === 'funds' && i.label === 'Funds') o.label = 'Contribute';
+      if (i.id === 'research' && i.label === 'Researches') o.label = 'Research';
+      if (i.id === 'about' && i.label === 'About us') o.label = 'About';
+      if (i.id === 'contact' && !(o.children || []).some(k => k && /\/contact\/jobs/.test(k.href || ''))) o.children = (o.children || []).concat([JOBS]);
       return o;
     });
   };
@@ -74,7 +79,7 @@
       (full || !c.uid ? '' : '<a class="btn btn-ghost btn-sm" href="/clients/find-a-client/' + c.uid + '">View request</a>') + '</div></article>';
   };
 
-  /* Tabs driven by the address: /news/physics, /about/holomatrix-team, /contact/jobs ... (no page reload) */
+  /* Tabs driven by the address: /news/physics, /about/holomatrix-team, /contribute/donate, /contact/jobs ... (no page reload) */
   const SLUG = { find: 'find-a-client', become: 'become-a-client', staff: 'holomatrix-team' };
   const LEGACY = { 'staff-team': 'staff', 'hire-a-client': 'find' };
   C.tabs = function (o) {
