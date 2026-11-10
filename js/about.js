@@ -1,4 +1,4 @@
-/* About us: /about/holomatrix (About Holomatrix) and /about/holomatrix-team (one card per person) */
+/* About us: /about/holomatrix (About Holomatrix) and /about/holomatrix-team (one card per person, with nationality) */
 (function () {
   'use strict';
   const C = HoloCommon, esc = UI.esc;
@@ -6,7 +6,6 @@
   let target = location.hash.slice(1), rendered = false;
   const TAG = { Scientists: ['g-sci', 'Scientist'], Management: ['g-man', 'Management'], Consultants: ['g-con', 'Consultant'] };
 
-  /* "Management & Scientists" → ['Scientists','Management'] in the fixed order; the old "Executive team" counts as Management */
   const groupsOf = m => {
     const set = [];
     String(m.staff_group || 'Management').split(/\s*[&,]\s*/).forEach(x => { x = x.trim(); if (x === 'Executive team') x = 'Management'; if (C.SECTIONS.includes(x) && !set.includes(x)) set.push(x); });
@@ -22,9 +21,10 @@
       return '<a href="' + esc(Site.safeUrl(l.url)) + '" target="_blank" rel="noopener noreferrer" title="' + esc(lab) + '" aria-label="' + esc(lab) + '"><span class="ico">' + HoloIcons.svg(n) + '</span></a>';
     }).join('');
     const tags = groupsOf(m).map(g => '<span class="gtag ' + TAG[g][0] + '">' + TAG[g][1] + '</span>').join('');
+    const nat = (m.nationality || '').trim() || 'Unknown';
     return '<article class="se reveal"><div class="se-photo">' +
       (m.photo_url && /^https:\/\//.test(m.photo_url) ? '<img src="' + esc(m.photo_url) + '" alt="' + esc(m.name) + '" loading="lazy">' : '<span style="font-family:var(--font-head);font-size:3rem;font-weight:700">' + ini + '</span>') +
-      '</div><div class="se-b"><div class="gtags">' + tags + '</div><h4>' + esc(m.name) + '</h4>' + (m.title ? '<p class="se-role">' + esc(m.title) + '</p>' : '') + (m.qualification ? '<p class="se-q">🎓 ' + esc(m.qualification) + '</p>' : '') +
+      '</div><div class="se-b"><div class="gtags">' + tags + '</div><h4>' + esc(m.name) + '</h4>' + (m.title ? '<p class="se-role">' + esc(m.title) + '</p>' : '') + '<p class="se-nat">📍 ' + esc(nat) + '</p>' + (m.qualification ? '<p class="se-q">🎓 ' + esc(m.qualification) + '</p>' : '') +
       (m.bio ? '<p class="se-bio">' + esc(m.bio) + '</p>' : '') + (links ? '<div class="se-links">' + links + '</div>' : '') + '</div></article>';
   }
 
@@ -33,7 +33,7 @@
     const [{ data }, a] = await Promise.all([sb.from('staff_members').select('*').eq('visible', true).order('position').order('created_at'), Site.accessReady]);
     const canEdit = !!(a && a.can('edit_site_content'));
     const rank = m => C.SECTIONS.indexOf(groupsOf(m)[0]);
-    const list = (data || []).map((m, i) => ({ m, i })).sort((x, y) => rank(x.m) - rank(y.m) || x.i - y.i).map(x => x.m);   // Scientists first, then Management, then Consultants; each person once
+    const list = (data || []).map((m, i) => ({ m, i })).sort((x, y) => rank(x.m) - rank(y.m) || x.i - y.i).map(x => x.m);
     const add = canEdit ? '<a class="se ph add" href="/admin#website/people"><div class="se-photo"><span>＋</span></div><div class="se-b"><h4>Add team member</h4><p class="se-bio">Add a new member, or a "coming soon" placeholder. Only admins see this card.</p></div></a>' : '';
     box.innerHTML = (list.length ? '<div class="sgrid">' + list.map(card).join('') + '</div>' : '<div class="empty">The Holomatrix Team will appear here soon.</div>') + (add ? '<div class="sgroup"><h3>Admin</h3><div class="sgrid">' + add + '</div></div>' : '');
     UI.observe(box);
