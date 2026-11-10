@@ -1,6 +1,8 @@
 /* Jobs (Contact us → Jobs, /contact/jobs). Only Administrators can post, edit, close or delete roles. */
 (function () {
   'use strict';
+  ['/css/holo2.css', '/css/holo3.css', '/css/clients.css'].forEach(h => { if (!document.querySelector('link[href="' + h + '"]')) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = h; document.head.appendChild(l); } });   // card, tag and empty-state styles
+
   const C = HoloCommon, e = UI.esc, $ = (s, r = document) => r.querySelector(s);
   const TYPES = ['Consultant', 'Scientist', 'Management', 'Other'], TAG = { Consultant: 'g-con', Scientist: 'g-sci', Management: 'g-man', Other: 'g-oth' };
   let view = null, isAdm = false, rows = [];
