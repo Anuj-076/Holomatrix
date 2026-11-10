@@ -30,10 +30,10 @@ a.hlu.hlink, a.hlu.hlink:hover { text-decoration-color: var(--hl); }
   .bh { position: relative; left: auto; top: auto; transform: none; width: min(118vw, 620px); margin: -10px 0 -40px; justify-self: center; order: -1; }
 }
 
-/* LIGHT MODE ONLY: the page stays light and the black hole's light turns golden yellow (dark mode is untouched). */
-:root[data-theme="light"] .bh-gl { filter: url(#bh-gold) drop-shadow(0 0 14px rgba(245, 180, 30, 0.45)); }
-:root[data-theme="light"] .bh-fallback { filter: url(#bh-gold); }
-:root[data-theme="light"] .bh-core { box-shadow: 0 0 0 2px rgba(219, 153, 5, 0.9), 0 0 26px rgba(245, 180, 30, 0.4); }
+/* LIGHT MODE: the black hole is exactly the same as in dark mode. A soft dark oval sits behind it (blurred edges), the rest of the page stays light. */
+.bh::before { content: ''; position: absolute; inset: 7% 3%; z-index: 0; border-radius: 50%; opacity: 0; filter: blur(16px); pointer-events: none;
+  background: radial-gradient(ellipse at center, #04060c 0%, #04060c 58%, rgba(4, 6, 12, 0.9) 70%, rgba(4, 6, 12, 0) 100%); }
+:root[data-theme="light"] .bh::before { opacity: 1; }
 :root[data-theme="light"] body[data-hdr="over"] .hdr:not(.scrolled) {
   --bg: inherit; --bg-2: inherit; --text: inherit; --muted: inherit; --accent: inherit; --hl: inherit; --ul: inherit;
   --surface: inherit; --surface-2: inherit; --border: inherit; --glass: inherit; --shadow: inherit;
@@ -56,22 +56,25 @@ a.hlu.hlink, a.hlu.hlink:hover { text-decoration-color: var(--hl); }
 body.editing .trk-list li.trk-card { display: flex !important; }
 body.editing .trk-list li.trk-card:not(:has(.trk-tx span:not(:empty))) { border-style: dashed; opacity: 0.8; }
 
-/* ================= About The Founder ================= */
-.fd { display: grid; grid-template-columns: 4fr 3fr; gap: clamp(18px, 2.4vw, 32px); align-items: start; margin-top: clamp(36px, 5vw, 60px); }
+/* ================= About The Founder: info card and message card have the same height ================= */
+.fd { display: grid; grid-template-columns: 4fr 3fr; gap: clamp(18px, 2.4vw, 32px); align-items: stretch; margin-top: clamp(36px, 5vw, 60px); }
 .fd > * { min-width: 0; }
-.fd-main { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr); gap: clamp(18px, 2.4vw, 30px); padding: clamp(16px, 2vw, 26px); border-radius: 30px; border: 1px solid var(--border);
+.fd-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: clamp(18px, 2.4vw, 30px); padding: clamp(16px, 2vw, 26px); border-radius: 30px; border: 1px solid var(--border);
   background: linear-gradient(150deg, color-mix(in srgb, var(--ul) 12%, transparent), var(--surface) 55%); }
-.fd-left { display: flex; flex-direction: column; gap: 12px; align-self: start; min-width: 0; }
-.fd-photo { aspect-ratio: 4 / 5; border-radius: 22px; border: 1px solid var(--border); background: var(--surface-2); display: grid; place-items: center; }
+.fd-left { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.fd-photo { flex: 1; min-height: 340px; position: relative; overflow: hidden; border-radius: 22px; border: 1px solid var(--border); background: var(--surface-2); display: grid; place-items: center; }
+.fd-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
 .fd-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .fd-links .pill { justify-content: center; padding: 9px 8px; font-size: 0.8rem; gap: 6px; min-width: 0; white-space: nowrap; }
 .fd-links .ico { width: 17px; height: 17px; }
 .fd-info { display: flex; flex-direction: column; min-width: 0; }
 .fd-info .kicker { margin-bottom: 8px; }
 .fd .owner-name { font-size: clamp(2rem, 3.4vw, 3.1rem); letter-spacing: -0.04em; line-height: 1.02; margin-bottom: 8px; }
-.fd .owner-title { font-size: 1.05rem; color: var(--hl); margin-bottom: 10px; }
+.fd .owner-title { font-size: 1.05rem; color: var(--hl); margin-bottom: 6px; }
+.fd-loc { display: flex; align-items: center; gap: 6px; color: var(--muted); font-weight: 600; margin: 2px 0 10px; }
+.fd-loc svg { width: 17px; height: 17px; color: var(--hl); flex: none; }
 .fd .owner-bio { color: var(--muted); white-space: pre-line; margin-bottom: 6px; }
-.fd-ach { list-style: none; display: grid; gap: 10px; margin: 14px 0 4px; }
+.fd-ach { list-style: none; display: grid; gap: 10px; margin: 10px 0 4px; }
 .fd-ach li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface); line-height: 1.5; font-size: 0.95rem; transition: transform 0.5s var(--ease-out), border-color 0.3s; }
 .fd-ach li:hover { transform: translateX(4px); border-color: var(--ul); }
 .fd-ic { flex: none; width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; font-style: normal; background: color-mix(in srgb, var(--ul) 18%, transparent); border: 1px solid color-mix(in srgb, var(--ul) 35%, transparent); }
@@ -81,8 +84,8 @@ body.editing .fd-ach li { display: flex !important; }
 body.editing .fd-ach li:not(:has(.fd-tx span:not(:empty), .fd-tx a)) { border-style: dashed; opacity: 0.8; }
 .fd-ach a .ico { display: none !important; }
 
-/* Message from Founder (home page card + About page) */
-.fd-msg { border-radius: 30px; border: 1px solid var(--border); background: var(--surface); padding: clamp(20px, 2.4vw, 32px); display: flex; flex-direction: column; min-height: 420px; align-self: stretch; }
+/* Message from Founder (home page card) */
+.fd-msg { border-radius: 30px; border: 1px solid var(--border); background: var(--surface); padding: clamp(20px, 2.4vw, 32px); display: flex; flex-direction: column; min-height: 420px; }
 .fd-msg-h { font-size: clamp(1.5rem, 2.4vw, 2.1rem); letter-spacing: -0.03em; color: var(--hl); padding-bottom: 14px; border-bottom: 2px solid var(--ul); margin-bottom: 18px; }
 .fd-msg-body { flex: 1; display: flex; flex-direction: column; gap: 14px; }
 .fd-msg-body p { color: var(--muted); line-height: 1.8; font-size: 1.02rem; margin: 0; }
@@ -91,9 +94,11 @@ body.editing .fd-ach li:not(:has(.fd-tx span:not(:empty), .fd-tx a)) { border-st
 .fb.fc { color: var(--hl); }
 .fd-cta { align-self: flex-start; margin-top: 6px; }
 .fd-sig { margin-top: auto !important; padding-top: 8px; text-align: right; font-family: var(--font-head); font-weight: 700; font-size: 1.15rem; color: var(--text) !important; }
-.fd-solo .fd-msg { min-height: 0; max-width: 900px; }
 @media (max-width: 1000px) { .fd { grid-template-columns: 1fr; } .fd-msg { min-height: 220px; } }
-@media (max-width: 620px) { .fd-main { grid-template-columns: 1fr; } .fd-left { max-width: 340px; } }
+@media (max-width: 620px) { .fd-main { grid-template-columns: 1fr; } .fd-photo { flex: none; min-height: 0; aspect-ratio: 4 / 5; max-width: 340px; } }
+
+/* Team cards: nationality line */
+.se-nat { color: var(--muted); font-size: 0.86rem; margin: 2px 0 4px; }
 
 /* On narrow screens the Track Record sits in a cyan box: cards turn light, text dark */
 @media (max-width: 900px) {
