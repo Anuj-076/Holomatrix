@@ -5,13 +5,17 @@
 
   /* Never let the page be zoomed out or pushed sideways on phones.
      Page-transition strips overlap, so no thin white seam shows on any screen.
-     Highlight colours: --hl (cyan, text) and --ul (royal blue, underlines/arrows/lines). */
+     Highlight colours: --hl (cyan, text) and --ul (royal blue, underlines/arrows/lines).
+     Thin, quiet scrollbars everywhere. */
   try {
     var vp = document.querySelector('meta[name="viewport"]');
     if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover');
     var fx = document.createElement('style');
     fx.textContent = 'html,body{max-width:100%;overflow-x:hidden}html,body{overflow-x:clip}' +
       ':root{--hl:#4de1ff;--ul:#4169e1}:root[data-theme="light"]{--hl:#0891b2;--ul:#3157d1}' +
+      'html{scrollbar-width:thin;scrollbar-color:rgba(130,150,190,.5) transparent}' +
+      '::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}' +
+      '::-webkit-scrollbar-thumb{background:rgba(130,150,190,.5);border-radius:6px}::-webkit-scrollbar-thumb:hover{background:rgba(130,150,190,.85)}' +
       '#vt{overflow:hidden}' +
       '#vt .vt-col{flex:0 0 calc(100% / 6 + 2px)!important;margin-right:-2px!important;box-shadow:none!important;border:0!important;backface-visibility:hidden;-webkit-backface-visibility:hidden}' +
       'html.vt-cover:not(.vt-out) #vt .vt-col,html.vt-in:not(.vt-out) #vt .vt-col{transform:scaleY(1.03)!important}';
