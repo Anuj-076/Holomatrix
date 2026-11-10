@@ -1,4 +1,4 @@
-/* About us: /about/holomatrix (About Holomatrix) and /about/holomatrix-team (Scientists, Management, Consultants) */
+/* About us: /about/holomatrix (About Holomatrix) and /about/holomatrix-team (one card per person) */
 (function () {
   'use strict';
   const C = HoloCommon, esc = UI.esc;
@@ -6,11 +6,12 @@
   let target = location.hash.slice(1), rendered = false;
   const TAG = { Scientists: ['g-sci', 'Scientist'], Management: ['g-man', 'Management'], Consultants: ['g-con', 'Consultant'] };
 
-  /* "Management & Scientists" → ['Management','Scientists']; the old "Executive team" counts as Management */
+  /* "Management & Scientists" → ['Scientists','Management'] in the fixed order; the old "Executive team" counts as Management */
   const groupsOf = m => {
     const set = [];
     String(m.staff_group || 'Management').split(/\s*[&,]\s*/).forEach(x => { x = x.trim(); if (x === 'Executive team') x = 'Management'; if (C.SECTIONS.includes(x) && !set.includes(x)) set.push(x); });
-    return set.length ? set : ['Management'];
+    const out = C.SECTIONS.filter(g => set.includes(g));
+    return out.length ? out : ['Management'];
   };
 
   function card(m) {
@@ -30,13 +31,11 @@
   async function loadStaff() {
     const box = document.getElementById('staff-list');
     const [{ data }, a] = await Promise.all([sb.from('staff_members').select('*').eq('visible', true).order('position').order('created_at'), Site.accessReady]);
-    const list = data || [], canEdit = !!(a && a.can('edit_site_content'));
+    const canEdit = !!(a && a.can('edit_site_content'));
+    const rank = m => C.SECTIONS.indexOf(groupsOf(m)[0]);
+    const list = (data || []).map((m, i) => ({ m, i })).sort((x, y) => rank(x.m) - rank(y.m) || x.i - y.i).map(x => x.m);   // Scientists first, then Management, then Consultants; each person once
     const add = canEdit ? '<a class="se ph add" href="/admin#website/people"><div class="se-photo"><span>＋</span></div><div class="se-b"><h4>Add team member</h4><p class="se-bio">Add a new member, or a "coming soon" placeholder. Only admins see this card.</p></div></a>' : '';
-    const html = C.SECTIONS.map(g => {
-      const rows = list.filter(m => groupsOf(m).includes(g));
-      return rows.length ? '<div class="sgroup"><h3>' + esc(g) + '</h3><div class="sgrid">' + rows.map(card).join('') + '</div></div>' : '';
-    }).join('');
-    box.innerHTML = (html || '<div class="empty">The Holomatrix Team will appear here soon.</div>') + (add ? '<div class="sgroup"><h3>Admin</h3><div class="sgrid">' + add + '</div></div>' : '');
+    box.innerHTML = (list.length ? '<div class="sgrid">' + list.map(card).join('') + '</div>' : '<div class="empty">The Holomatrix Team will appear here soon.</div>') + (add ? '<div class="sgroup"><h3>Admin</h3><div class="sgrid">' + add + '</div></div>' : '');
     UI.observe(box);
   }
 
