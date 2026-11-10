@@ -1,6 +1,13 @@
-/* Admin: the team "Group" dropdown becomes three tick buttons. Tick one, two or all three. */
+/* Admin: team "Group" becomes three tick buttons; "Log out" asks first. */
 (function () {
   'use strict';
+  if (window.Auth && !Auth._so) {
+    Auth._so = true; const so = Auth.signOut.bind(Auth);
+    Auth.signOut = async function () {
+      const ok = await UI.confirm('Log out?', 'You will need to log in again to use your account.', { confirmText: 'Log out', cancelText: 'Cancel' });
+      if (ok) return so();
+    };
+  }
   const G = [['Scientists', '#1fc8e8', '#04101c'], ['Management', '#d93a3a', '#fff'], ['Consultants', '#8b5a2b', '#fff']];
   const st = document.createElement('style');
   st.textContent = '.gpick{display:flex;gap:8px;flex-wrap:wrap}.gpick label{position:relative;cursor:pointer}.gpick input[type=checkbox]{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}' +
@@ -24,7 +31,7 @@
       i.onchange = () => {
         if (i.checked) { if (cur.indexOf(g[0]) < 0) cur.push(g[0]); }
         else if (cur.length > 1) cur.splice(cur.indexOf(g[0]), 1);
-        else { i.checked = true; return; }       // at least one group
+        else { i.checked = true; return; }
         sync();
       };
       const s = document.createElement('span'); s.textContent = g[0];
