@@ -1,11 +1,11 @@
-/* Holomatrix extras: Track Record cards (all text editable) + FAQ accordion (one open at a time) */
+/* Holomatrix extras: Track Record cards, Founder message (home + About page), bottom buttons, gold light for light mode, FAQ accordion */
 (function () {
   'use strict';
   if (!document.querySelector('link[href="/css/holo3.css"]')) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/css/holo3.css'; document.head.appendChild(l); }
 
   const R = window.HoloRender, e = UI.esc;
 
-  // ['p', text] = plain, ['h', text] = highlighted (cyan, bold, royal-blue underline). Empty list = a card for later.
+  /* ---------- Track Record ---------- */
   const TRK = [
     ['📄', [['p', 'Published a total of'], ['h', '5 Journal Articles']]],
     ['🌍', [['h', '3+ years'], ['p', 'of R&D Consulting Experience Across Research Organisations in USA, Europe and NZ']]],
@@ -23,13 +23,59 @@
     R.hero = function (learn) { return orig.call(this, learn).replace(/<div class="hi-img img-slot"[^>]*>[\s\S]*?<\/div>/, trk()); };
   }
 
-  // a link with no address yet does nothing
+  /* ---------- Message from Founder ----------
+     p = plain, b = bold + royal-blue underline, c = cyan, bc = both. A third value "1" means: no space before it. */
+  const FM = [
+    [['p', 'Every great discovery begins with'], ['b', 'a question'], ['p', ',', 1], ['b', 'a moment of curiosity'], ['p', ', or', 1], ['b', 'the courage to challenge what we think we know'], ['p', '.', 1]],
+    [['bc', 'That spirit is what inspired me to build Holomatrix.']],
+    [['p', 'I envision'], ['c', 'Holomatrix'], ['p', 'as more than an organisation. I want it to become'], ['b', 'a thriving ecosystem'], ['p', 'that brings curious minds together to'], ['b', 'learn, explore ideas, conduct research'], ['p', 'and'], ['b', 'turn knowledge into meaningful contributions'], ['p', '.', 1]],
+    [['p', 'Whether you are a student taking your first steps into research, an independent researcher pursuing an unconventional question, or an organisation looking for new perspectives, there will be a place'], ['b', 'for you here'], ['p', '.', 1]],
+    [['p', 'We believe in'], ['b', 'asking better questions'], ['p', ',', 1], ['b', 'thinking independently'], ['p', ',', 1], ['b', 'embracing scientific integrity'], ['p', 'and'], ['b', 'keeping the pursuit of knowledge'], ['b', 'open to everyone'], ['p', '. We are at the beginning of this journey, and there is much to explore, discover and build.', 1]],
+    [['p', "I invite you to be part of it. Let's learn, question, discover and push the boundaries of what we know — together."]],
+    [['p', 'If this vision resonates with you, your support would be invaluable in helping us build and sustain this ecosystem. Every contribution brings us one step closer to making this vision a reality.']]
+  ];
+  const CL = { p: '', b: 'fb', c: 'fc', bc: 'fb fc' };
+  const fmHtml = () => FM.map((P, i) => '<p>' + P.map((s, j) => (j && !s[2] ? ' ' : '') + '<span' + (CL[s[0]] ? ' class="' + CL[s[0]] + '"' : '') + ' data-t="fd.m.' + i + '.' + j + '">' + e(s[1]) + '</span>').join('') + '</p>').join('') +
+    '<a class="btn btn-primary fd-cta" href="/funds/donate"><span data-t="fd.m.cta">Contribute</span></a><p class="fd-sig" data-t="fd.m.sig">— Amal Pushp</p>';
+
+  const home = document.getElementById('fd-msg-body');
+  if (home) { home.innerHTML = fmHtml(); if (window.Site && Site.applyAll) Site.applyAll(); }
+
+  if (R && R.aboutPage) {
+    const oa = R.aboutPage;
+    R.aboutPage = function () {
+      const h = oa.apply(this, arguments);
+      const blk = '<section class="hm-sec fd-solo"><div class="fd-msg"><h3 class="fd-msg-h" data-t="fd.msg.h">Message from Founder</h3><div class="fd-msg-body">' + fmHtml() + '</div></div></section>';
+      const k = '<h2 class="hm-h2" data-t="hm.faq.h">', i = h.indexOf(k);
+      return i > -1 ? h.slice(0, i) + blk + h.slice(i) : h + blk;
+    };
+  }
+
+  /* ---------- the three buttons at the bottom ---------- */
+  if (R && R.future) {
+    const of = R.future;
+    R.future = function () {
+      return of.apply(this, arguments)
+        .replace('href="/research/all"', 'href="/contact/jobs"')                                          // Explore Opportunities → Jobs
+        .replace(/href="\/contact\/staff-support"><span data-t="hm.cta1"/, 'href="#" data-nolink="1"><span data-t="hm.cta1"');   // Collaborate with Us → nowhere (for now)
+    };
+  }
+  document.addEventListener('click', ev => { const a = ev.target.closest && ev.target.closest('a[data-nolink]'); if (a) ev.preventDefault(); });
+
+  /* a link with no address yet does nothing */
   document.addEventListener('click', ev => {
     const a = ev.target.closest && ev.target.closest('a[data-link="owner.paper"]');
     if (a && (a.getAttribute('href') || '#') === '#') ev.preventDefault();
   });
 
-  // opening one FAQ closes the others
+  /* ---------- gold colour filter (used for the black hole's light in light mode only) ---------- */
+  if (!document.getElementById('bh-gold-svg')) {
+    const d = document.createElement('div'); d.id = 'bh-gold-svg'; d.setAttribute('aria-hidden', 'true'); d.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+    d.innerHTML = '<svg width="0" height="0"><filter id="bh-gold" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0.86  0 0 0 0 0.60  0 0 0 0 0.02  0 0 0 1.5 0"/></filter></svg>';
+    document.body.appendChild(d);
+  }
+
+  /* ---------- opening one FAQ closes the others ---------- */
   document.addEventListener('toggle', ev => {
     const d = ev.target;
     if (!d || d.tagName !== 'DETAILS' || !d.open || !d.closest('.faq')) return;
