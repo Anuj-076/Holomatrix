@@ -1,4 +1,4 @@
-/* Holomatrix extras: Track Record cards, Founder message (home + About page), bottom buttons, gold light for light mode, FAQ accordion */
+/* Holomatrix extras: Track Record cards, Founder message (home page only), bottom buttons, FAQ accordion */
 (function () {
   'use strict';
   if (!document.querySelector('link[href="/css/holo3.css"]')) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/css/holo3.css'; document.head.appendChild(l); }
@@ -23,8 +23,8 @@
     R.hero = function (learn) { return orig.call(this, learn).replace(/<div class="hi-img img-slot"[^>]*>[\s\S]*?<\/div>/, trk()); };
   }
 
-  /* ---------- Message from Founder ----------
-     p = plain, b = bold + royal-blue underline, c = cyan, bc = both. A third value "1" means: no space before it. */
+  /* ---------- Message from Founder (home page card) ----------
+     p = plain, b = bold + royal-blue underline, c = cyan, bc = both. A third value 1 means: no space before it. */
   const FM = [
     [['p', 'Every great discovery begins with'], ['b', 'a question'], ['p', ',', 1], ['b', 'a moment of curiosity'], ['p', ', or', 1], ['b', 'the courage to challenge what we think we know'], ['p', '.', 1]],
     [['bc', 'That spirit is what inspired me to build Holomatrix.']],
@@ -40,16 +40,6 @@
 
   const home = document.getElementById('fd-msg-body');
   if (home) { home.innerHTML = fmHtml(); if (window.Site && Site.applyAll) Site.applyAll(); }
-
-  if (R && R.aboutPage) {
-    const oa = R.aboutPage;
-    R.aboutPage = function () {
-      const h = oa.apply(this, arguments);
-      const blk = '<section class="hm-sec fd-solo"><div class="fd-msg"><h3 class="fd-msg-h" data-t="fd.msg.h">Message from Founder</h3><div class="fd-msg-body">' + fmHtml() + '</div></div></section>';
-      const k = '<h2 class="hm-h2" data-t="hm.faq.h">', i = h.indexOf(k);
-      return i > -1 ? h.slice(0, i) + blk + h.slice(i) : h + blk;
-    };
-  }
 
   /* ---------- the three buttons at the bottom ---------- */
   if (R && R.future) {
@@ -67,13 +57,6 @@
     const a = ev.target.closest && ev.target.closest('a[data-link="owner.paper"]');
     if (a && (a.getAttribute('href') || '#') === '#') ev.preventDefault();
   });
-
-  /* ---------- gold colour filter (used for the black hole's light in light mode only) ---------- */
-  if (!document.getElementById('bh-gold-svg')) {
-    const d = document.createElement('div'); d.id = 'bh-gold-svg'; d.setAttribute('aria-hidden', 'true'); d.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
-    d.innerHTML = '<svg width="0" height="0"><filter id="bh-gold" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0.86  0 0 0 0 0.60  0 0 0 0 0.02  0 0 0 1.5 0"/></filter></svg>';
-    document.body.appendChild(d);
-  }
 
   /* ---------- opening one FAQ closes the others ---------- */
   document.addEventListener('toggle', ev => {
