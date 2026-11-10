@@ -71,7 +71,7 @@
         </div>
 
         <div class="fd" id="owner">
-          <!-- founder photo + information (same height as the message card) -->
+          <!-- founder card: whole photo + links on the left, name / India / MSc / Fellow on the right, the other points underneath -->
           <div class="fd-main reveal">
             <div class="fd-left">
               <div class="fd-photo img-slot" data-img="owner.photo" data-alt="Amal Pushp"><span class="initials" data-t="owner.initials">AP</span></div>
@@ -82,7 +82,7 @@
                 <a class="pill" href="https://linktr.ee/amalpushp" data-icon="linktree" target="_blank" rel="noopener noreferrer" data-link="owner.linktree" data-label="Founder: Linktree"><span data-t="owner.linktree.label">Linktree</span></a>
               </div>
             </div>
-            <div class="fd-info">
+            <div class="fd-head">
               <p class="kicker" data-t="owner.label">Founder &amp; CEO</p>
               <h3 class="owner-name" data-t="owner.name">Amal Pushp</h3>
               <p class="owner-title" data-t="owner.title" data-ph="Title / role"></p>
@@ -91,12 +91,12 @@
               <ul class="fd-ach">
                 <li><i class="fd-ic">🎓</i><div class="fd-tx"><span class="hlu" data-t="owner.msc">MSc in Physics</span></div></li>
                 <li><i class="fd-ic">🔭</i><div class="fd-tx"><span class="hlu" data-t="owner.q0.a">Youngest Fellow of the Royal Astronomical Society</span><span data-t="owner.p0.b">, London (</span><span class="hlu" data-t="owner.p0.c">F.R.A.S.</span><span data-t="owner.p0.d">): Nominated by</span> <span class="hlu" data-t="owner.p0.e">Former Astronomer Royal and Cambridge University Astrophysicist, Sir Lord Martin Rees</span></div></li>
-                <li><i class="fd-ic">🌐</i><div class="fd-tx"><span class="hlu" data-t="owner.p1.a">Youngest Delegate</span> <span data-t="owner.p1.b">at an International Scientific Conference in Dubai</span></div></li>
-                <li><i class="fd-ic">📄</i><div class="fd-tx"><span data-t="owner.p2.a">Published a Paper in</span> <a class="hlink" href="https://link.springer.com/article/10.1007/s10686-026-10078-4" target="_blank" rel="noopener noreferrer" data-link="owner.paper" data-label="Founder: Springer Nature paper link"><span data-t="owner.p2.b">Springer Nature</span></a></div></li>
-                <li><i class="fd-ic">➕</i><div class="fd-tx"><span data-t="owner.p3.a" data-ph="Add a new point about Amal"></span></div></li>
-                <li><i class="fd-ic">➕</i><div class="fd-tx"><span data-t="owner.p4.a" data-ph="Add another point about Amal"></span></div></li>
               </ul>
             </div>
+            <ul class="fd-ach fd-a2">
+              <li><i class="fd-ic">🌐</i><div class="fd-tx"><span class="hlu" data-t="owner.p1.a">Youngest Delegate</span> <span data-t="owner.p1.b">at an International Scientific Conference in Dubai</span></div></li>
+              <li><i class="fd-ic">📄</i><div class="fd-tx"><span data-t="owner.p2.a">Published a Paper in</span> <a class="hlink" href="https://link.springer.com/article/10.1007/s10686-026-10078-4" target="_blank" rel="noopener noreferrer" data-link="owner.paper" data-label="Founder: Springer Nature paper link"><span data-t="owner.p2.b">Springer Nature</span></a></div></li>
+            </ul>
           </div>
 
           <!-- Message from Founder (text is built by js/holo-extra.js) -->
@@ -127,9 +127,9 @@
       </div>
     </section>
 
-    <section class="pv" id="research" data-section="research" data-label="Researches" hidden>
+    <section class="pv" id="research" data-section="research" data-label="Research" hidden>
       <div class="wide">
-        <div class="pv-head reveal"><div><p class="kicker" data-t="lp.res.kicker">Researches</p><h2 data-t="lp.res.title" data-ph="Heading"></h2></div><a class="pill" href="/research/all"><span data-t="lp.more.res">View all</span></a></div>
+        <div class="pv-head reveal"><div><p class="kicker" data-t="lp.res.kicker">Research</p><h2 data-t="lp.res.title" data-ph="Heading"></h2></div><a class="pill" href="/research/all"><span data-t="lp.more.res">View all</span></a></div>
         <div class="grid-cards" id="lp-research"></div>
       </div>
     </section>
@@ -147,7 +147,7 @@
     <section class="pv" id="funds" data-section="funds" data-label="Contribute">
       <div class="wide">
         <div class="pv-head reveal"><div><p class="kicker" data-t="lp.funds.kicker">Contribute</p><h2 data-t="lp.funds.title" data-ph="Heading"></h2></div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="pill" href="/funds/subscribe"><span data-t="lp.funds.sub">Subscribe</span></a><a class="pill" href="/funds/donate"><span data-t="lp.funds.don">Donate</span></a></div></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="pill" href="/contribute/subscribe"><span data-t="lp.funds.sub">Subscribe</span></a><a class="pill" href="/contribute/donate"><span data-t="lp.funds.don">Donate</span></a></div></div>
         <div class="plans" id="lp-plans"></div>
       </div>
     </section>
