@@ -1,4 +1,4 @@
-/* About us: /about/holomatrix (About Holomatrix) and /about/holomatrix-team (one card per person, with nationality) */
+/* About us: /about/holomatrix (About Holomatrix) and /about/holomatrix-team (one card per person) */
 (function () {
   'use strict';
   const C = HoloCommon, esc = UI.esc;
@@ -21,10 +21,9 @@
       return '<a href="' + esc(Site.safeUrl(l.url)) + '" target="_blank" rel="noopener noreferrer" title="' + esc(lab) + '" aria-label="' + esc(lab) + '"><span class="ico">' + HoloIcons.svg(n) + '</span></a>';
     }).join('');
     const tags = groupsOf(m).map(g => '<span class="gtag ' + TAG[g][0] + '">' + TAG[g][1] + '</span>').join('');
-    const nat = (m.nationality || '').trim() || 'Unknown';
     return '<article class="se reveal"><div class="se-photo">' +
       (m.photo_url && /^https:\/\//.test(m.photo_url) ? '<img src="' + esc(m.photo_url) + '" alt="' + esc(m.name) + '" loading="lazy">' : '<span style="font-family:var(--font-head);font-size:3rem;font-weight:700">' + ini + '</span>') +
-      '</div><div class="se-b"><div class="gtags">' + tags + '</div><h4>' + esc(m.name) + '</h4>' + (m.title ? '<p class="se-role">' + esc(m.title) + '</p>' : '') + '<p class="se-nat">📍 ' + esc(nat) + '</p>' + (m.qualification ? '<p class="se-q">🎓 ' + esc(m.qualification) + '</p>' : '') +
+      '</div><div class="se-b"><div class="gtags">' + tags + '</div><h4>' + esc(m.name) + '</h4>' + (m.title ? '<p class="se-role">' + esc(m.title) + '</p>' : '') + (m.qualification ? '<p class="se-q">🎓 ' + esc(m.qualification) + '</p>' : '') +
       (m.bio ? '<p class="se-bio">' + esc(m.bio) + '</p>' : '') + (links ? '<div class="se-links">' + links + '</div>' : '') + '</div></article>';
   }
 
