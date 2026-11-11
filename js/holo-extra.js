@@ -22,17 +22,17 @@
   }
 
   /* ---------- Message from Founder (home page card) ----------
-     p = plain, b = bold + royal-blue underline, c = cyan, bc = both. A third value 1 means: no space before it. */
+     p = plain, b = bold. No colours and no underlines anywhere in the message. A third value 1 means: no space before it. */
   const FM = [
     [['p', 'Every great discovery begins with'], ['b', 'a question'], ['p', ',', 1], ['b', 'a moment of curiosity'], ['p', ', or', 1], ['b', 'the courage to challenge what we think we know'], ['p', '.', 1]],
-    [['bc', 'That spirit is what inspired me to build Holomatrix.']],
-    [['p', 'I envision'], ['c', 'Holomatrix'], ['p', 'as more than an organisation. I want it to become'], ['b', 'a thriving ecosystem'], ['p', 'that brings curious minds together to'], ['b', 'learn, explore ideas, conduct research'], ['p', 'and'], ['b', 'turn knowledge into meaningful contributions'], ['p', '.', 1]],
+    [['b', 'That spirit is what inspired me to build Holomatrix.']],
+    [['p', 'I envision Holomatrix as more than an organisation. I want it to become'], ['b', 'a thriving ecosystem'], ['p', 'that brings curious minds together to'], ['b', 'learn, explore ideas, conduct research'], ['p', 'and'], ['b', 'turn knowledge into meaningful contributions'], ['p', '.', 1]],
     [['p', 'Whether you are a student taking your first steps into research, an independent researcher pursuing an unconventional question, or an organisation looking for new perspectives, there will be a place'], ['b', 'for you here'], ['p', '.', 1]],
     [['p', 'We believe in'], ['b', 'asking better questions'], ['p', ',', 1], ['b', 'thinking independently'], ['p', ',', 1], ['b', 'embracing scientific integrity'], ['p', 'and'], ['b', 'keeping the pursuit of knowledge'], ['b', 'open to everyone'], ['p', '. We are at the beginning of this journey, and there is much to explore, discover and build.', 1]],
     [['p', "I invite you to be part of it. Let's learn, question, discover and push the boundaries of what we know — together."]],
     [['p', 'If this vision resonates with you, your support would be invaluable in helping us build and sustain this ecosystem. Every contribution brings us one step closer to making this vision a reality.']]
   ];
-  const CL = { p: '', b: 'fb', c: 'fc', bc: 'fb fc' };
+  const CL = { p: '', b: 'fb' };
   const fmHtml = () => FM.map((P, i) => '<p>' + P.map((s, j) => (j && !s[2] ? ' ' : '') + '<span' + (CL[s[0]] ? ' class="' + CL[s[0]] + '"' : '') + ' data-t="fd.m.' + i + '.' + j + '">' + e(s[1]) + '</span>').join('') + '</p>').join('') +
     '<a class="btn btn-primary fd-cta" href="/contribute/donate"><span data-t="fd.m.cta">Contribute</span></a><p class="fd-sig" data-t="fd.m.sig">— Amal Pushp</p>';
 
