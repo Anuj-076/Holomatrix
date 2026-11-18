@@ -18,8 +18,8 @@
     "BREVO_SENDER_EMAIL": "holomatrix.support@gmail.com",
     "BREVO_SENDER_NAME": "Holomatrix",
     "GEMINI_MODEL": "gemini-3.1-flash-lite,gemini-3.5-flash-lite,gemini-3-flash-preview",
-    "GROQ_MODEL": "llama-3.3-70b-versatile,llama-3.1-8b-instant",
-    "OPENROUTER_MODEL": "openrouter/free,openai/gpt-oss-120b:free,google/gemma-4-31b-it:free",
+    "GROQ_MODEL": "openai/gpt-oss-20b,openai/gpt-oss-120b",
+    "OPENROUTER_MODEL": "openrouter/free,google/gemma-4-31b-it:free",
     "CF_AI_MODEL": "@cf/google/gemma-4-26b-a4b-it,@cf/qwen/qwen3.8-27b"
   },
   "observability": { "enabled": true }
