@@ -56,26 +56,26 @@ a.hlu.hlink, a.hlu.hlink:hover { text-decoration-color: var(--hl); }
 
 /* ================= About The Founder =================
    Top row: whole (square) photo on the left; "Founder & CEO", name and the 4 links on the right.
-   Underneath, full width: the description blocks, which stretch so this card matches the Message card. */
+   Underneath, full width: the description blocks (normal size; extra height becomes space between them). */
 .fd { display: grid; grid-template-columns: 4fr 3fr; gap: clamp(18px, 2.4vw, 32px); align-items: stretch; margin-top: clamp(36px, 5vw, 60px); }
 .fd > * { min-width: 0; }
-.fd-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: clamp(16px, 2vw, 26px); row-gap: 16px; padding: clamp(16px, 2vw, 26px); border-radius: 30px; border: 1px solid var(--border);
+.fd-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: clamp(16px, 2vw, 26px); row-gap: 16px; padding: clamp(16px, 2vw, 24px); border-radius: 30px; border: 1px solid var(--border);
   background: linear-gradient(150deg, color-mix(in srgb, var(--ul) 12%, transparent), var(--surface) 55%); }
 .fd-photo { position: relative; width: 100%; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 22px; border: 1px solid var(--border); background: var(--surface-2); display: grid; place-items: center; }
 .fd-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .fd-head { display: flex; flex-direction: column; min-width: 0; }
-.fd-head .kicker { margin-bottom: 10px; font-size: 0.9rem; }
-.fd .owner-name { font-size: clamp(2.3rem, 4vw, 3.8rem); letter-spacing: -0.04em; line-height: 1.02; margin-bottom: 8px; }
-.fd .owner-title { font-size: 1.2rem; color: var(--hl); margin-bottom: 6px; }
-.fd-links { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: auto; padding-top: 14px; }
-.fd-links .pill { justify-content: center; padding: 13px 10px; font-size: 1rem; gap: 8px; min-width: 0; white-space: nowrap; }
-.fd-links .ico { width: 21px; height: 21px; }
-.fd-ach { list-style: none; display: grid; gap: 12px; margin: 0; }
+.fd-head .kicker { margin-bottom: 8px; font-size: 0.82rem; }
+.fd .owner-name { font-size: clamp(2.1rem, 3.6vw, 3.3rem); letter-spacing: -0.04em; line-height: 1.02; margin-bottom: 8px; }
+.fd .owner-title { font-size: 1.1rem; color: var(--hl); margin-bottom: 6px; }
+.fd-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; padding-top: 14px; }
+.fd-links .pill { justify-content: center; padding: 10px 8px; font-size: 0.88rem; gap: 7px; min-width: 0; white-space: nowrap; }
+.fd-links .ico { width: 18px; height: 18px; }
+.fd-ach { list-style: none; display: grid; gap: 10px; margin: 0; }
 .fd-a2 { grid-column: 1 / -1; align-content: start; }
-@media (min-width: 1001px) { .fd-a2 { grid-auto-rows: 1fr; align-content: stretch; } }
-.fd-ach li { display: flex; gap: 16px; align-items: center; padding: 16px 20px; border-radius: 18px; border: 1px solid var(--border); background: var(--surface); line-height: 1.55; font-size: 1.15rem; transition: transform 0.5s var(--ease-out), border-color 0.3s; }
+@media (min-width: 1001px) { .fd-a2 { align-content: space-between; } }
+.fd-ach li { display: flex; gap: 12px; align-items: center; padding: 12px 15px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface); line-height: 1.5; font-size: 0.98rem; transition: transform 0.5s var(--ease-out), border-color 0.3s; }
 .fd-ach li:hover { transform: translateX(4px); border-color: var(--ul); }
-.fd-ic { flex: none; width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; font-style: normal; font-size: 1.25rem; background: color-mix(in srgb, var(--ul) 18%, transparent); border: 1px solid color-mix(in srgb, var(--ul) 35%, transparent); }
+.fd-ic { flex: none; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; font-style: normal; font-size: 1.05rem; background: color-mix(in srgb, var(--ul) 18%, transparent); border: 1px solid color-mix(in srgb, var(--ul) 35%, transparent); }
 .fd-tx { min-width: 0; }
 .fd-ach li:not(:has(.fd-tx span:not(:empty), .fd-tx a)) { display: none; }
 body.editing .fd-ach li { display: flex !important; }
@@ -83,17 +83,17 @@ body.editing .fd-ach li:not(:has(.fd-tx span:not(:empty), .fd-tx a)) { border-st
 .fd-ach a .ico { display: none !important; }
 
 /* Message from Founder (home page card): plain text, bold only where marked, nothing coloured or underlined */
-.fd-msg { border-radius: 30px; border: 1px solid var(--border); background: var(--surface); padding: clamp(22px, 2.6vw, 36px); display: flex; flex-direction: column; min-height: 420px; }
-.fd-msg-h { font-size: clamp(1.8rem, 2.8vw, 2.5rem); letter-spacing: -0.03em; color: var(--text); padding-bottom: 14px; border-bottom: 2px solid var(--ul); margin-bottom: 20px; }
-.fd-msg-body { flex: 1; display: flex; flex-direction: column; gap: 16px; }
-.fd-msg-body p { color: var(--muted); line-height: 1.85; font-size: 1.15rem; margin: 0; }
+.fd-msg { border-radius: 30px; border: 1px solid var(--border); background: var(--surface); padding: clamp(20px, 2.4vw, 30px); display: flex; flex-direction: column; min-height: 420px; }
+.fd-msg-h { font-size: clamp(1.55rem, 2.4vw, 2.1rem); letter-spacing: -0.03em; color: var(--text); padding-bottom: 14px; border-bottom: 2px solid var(--ul); margin-bottom: 18px; }
+.fd-msg-body { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.fd-msg-body p { color: var(--muted); line-height: 1.75; font-size: 1.04rem; margin: 0; }
 .fb { font-weight: 700; color: inherit; text-decoration: none; }
-.fd-cta { align-self: flex-start; margin-top: 8px; font-size: 1.05rem; padding: 14px 28px; }
-.fd-sig { margin-top: auto !important; padding-top: 10px; text-align: right; font-family: var(--font-head); font-weight: 700; font-size: 1.3rem; color: var(--text) !important; }
+.fd-cta { align-self: flex-start; margin-top: 6px; font-size: 0.95rem; padding: 12px 24px; }
+.fd-sig { margin-top: auto !important; padding-top: 8px; text-align: right; font-family: var(--font-head); font-weight: 700; font-size: 1.15rem; color: var(--text) !important; }
 @media (max-width: 1000px) { .fd { grid-template-columns: 1fr; } .fd-msg { min-height: 220px; } }
 @media (max-width: 620px) {
   .fd-main { grid-template-columns: 1fr; grid-template-rows: auto; } .fd-photo { max-width: 340px; } .fd-links { margin-top: 12px; }
-  .fd-ach li { font-size: 1.02rem; padding: 14px 16px; } .fd-msg-body p { font-size: 1.05rem; }
+  .fd-ach li { font-size: 0.95rem; padding: 12px 14px; } .fd-msg-body p { font-size: 1rem; }
 }
 
 /* On narrow screens the Track Record sits in a cyan box: cards turn light, text dark */
