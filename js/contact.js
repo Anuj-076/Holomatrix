@@ -6,6 +6,7 @@
   let cleanup = null;
 
   /* ============ AI support ============ */
+  const BUSY = 'Holomatrix AI support is busy right now. Please try again in about 5 minutes, or use Staff support.';
   function ai() {
     const KEY = 'holo-ai-chat'; let hist = []; try { hist = JSON.parse(sessionStorage.getItem(KEY) || '[]'); } catch (e) {}
     root.innerHTML = '<div class="ai"><div class="ai-head"><div><b>Holomatrix AI support</b><small>Ask about Holomatrix or this website. AI can make mistakes.</small></div><button class="btn btn-ghost btn-sm" id="aic">Clear</button></div>' +
@@ -21,12 +22,14 @@
     async function send(text) {
       text = text.trim(); if (!text) return;
       hist.push({ role: 'user', content: text.slice(0, 500) }); save(); draw(true); btn.disabled = true;
-      let reply = 'Something went wrong. Please try again.';
+      let reply = BUSY;
       try {
         const s = await Auth.session(), h = { 'Content-Type': 'application/json' }; if (s) h.Authorization = 'Bearer ' + s.access_token;
         const r = await fetch('/api/ai-chat', { method: 'POST', headers: h, body: JSON.stringify({ messages: hist.slice(-10) }) });
-        const j = await r.json().catch(() => ({})); reply = r.ok ? j.reply : (j.error || reply);
-      } catch (e) { reply = 'Network problem. Please check your connection and try again.'; }
+        const j = await r.json().catch(() => ({}));
+        if (r.ok && j.reply) reply = j.reply;
+        else if (r.status === 429 && j.error) reply = j.error;     // "you asked a lot of questions" is shown as it is; every other problem shows the friendly busy message
+      } catch (e) { reply = BUSY; }
       hist.push({ role: 'assistant', content: reply }); save(); draw(false); btn.disabled = false; inp.focus();
     }
     document.getElementById('aif').onsubmit = e => { e.preventDefault(); const t = inp.value; inp.value = ''; send(t); };
