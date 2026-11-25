@@ -19,23 +19,26 @@
   const JOBS = { label: 'Jobs', href: '/contact/jobs' };
   C.DEFAULT_NAV = [
     { id: 'news', label: 'News', href: '/news/all', visible: true, children: sub('/news', C.NEWS_CATS) },
-    { id: 'research', label: 'Research', href: '/research/all', premium: true, visible: true, children: sub('/research', C.RES_CATS) },
+    { id: 'research', label: 'Research', href: '/research/all', visible: true, children: sub('/research', C.RES_CATS) },
     { id: 'about', label: 'About', href: '/about/holomatrix', visible: true, children: [{ label: 'About Holomatrix', href: '/about/holomatrix' }, { label: 'Holomatrix Team', href: '/about/holomatrix-team' }] },
     { id: 'clients', label: 'Client', href: '/clients/become-a-client', visible: true, children: [{ label: 'Find a client', href: '/clients/find-a-client', perm: 'find_clients' }, { label: 'Become a client', href: '/clients/become-a-client' }] },
-    { id: 'funds', label: 'Contribute', href: '/contribute/subscribe', visible: true, children: [{ label: 'Subscribe', href: '/contribute/subscribe' }, { label: 'Donate', href: '/contribute/donate' }] },
+    { id: 'funds', label: 'Contribute', href: '/contribute/donate', visible: true, children: [] },
     { id: 'contact', label: 'Contact us', href: '/contact/ai-support', visible: true, children: [{ label: 'AI support', href: '/contact/ai-support' }, { label: 'Staff support', href: '/contact/staff-support' }, JOBS] }
   ];
   /* A menu saved earlier in Admin is upgraded on the fly: new names (Research, About, Contribute), /funds → /contribute addresses,
-     Jobs added under Contact us, the old Orbit item dropped. */
+     Jobs added under Contact us, the old Orbit item dropped, "Premium" marks removed (research is free), Subscribe removed (packs are off). */
   const fixHref = h => String(h || '').replace(/^\/funds(?=\/|$)/, '/contribute');
+  const isSub = h => /^\/(funds|contribute)\/subscribe/.test(String(h || ''));
   C.getNav = () => {
     const n = window.Site && Site.content && Site.content.nav;
     if (!(Array.isArray(n) && n.length)) return C.DEFAULT_NAV;
     return n.filter(i => !(i && (i.id === 'orbit' || /^\/orbit/.test(i.href || '')))).map(i => {
       if (!i) return i;
       const o = Object.assign({}, i, { href: fixHref(i.href) });
-      if (Array.isArray(i.children)) o.children = i.children.map(k => k ? Object.assign({}, k, { href: fixHref(k.href) }) : k);
-      if (i.id === 'funds' && i.label === 'Funds') o.label = 'Contribute';
+      delete o.premium;
+      if (isSub(o.href)) o.href = '/contribute/donate';
+      if (Array.isArray(i.children)) o.children = i.children.filter(k => !(k && isSub(k.href))).map(k => { if (!k) return k; const c = Object.assign({}, k, { href: fixHref(k.href) }); delete c.premium; return c; });
+      if (i.id === 'funds') { if (i.label === 'Funds') o.label = 'Contribute'; if ((o.children || []).length <= 1) o.children = []; }
       if (i.id === 'research' && i.label === 'Researches') o.label = 'Research';
       if (i.id === 'about' && i.label === 'About us') o.label = 'About';
       if (i.id === 'contact' && !(o.children || []).some(k => k && /\/contact\/jobs/.test(k.href || ''))) o.children = (o.children || []).concat([JOBS]);
@@ -46,7 +49,6 @@
   C.date = d => new Date(d).toLocaleDateString([], { dateStyle: 'medium' });
   C.time = d => new Date(d).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
   C.catLabel = (list, id) => (list.find(c => c[0] === id) || [0, id])[1];
-  C.premium = async () => { try { const { data, error } = await sb.rpc('has_premium'); return !error && data === true; } catch (e) { return false; } };
   C.paras = t => String(t || '').split(/\n{2,}/).filter(Boolean).map(p => '<p>' + UI.esc(p).replace(/\n/g, '<br>') + '</p>').join('');
   C.normUrl = u => {
     u = String(u || '').trim(); if (!u) return '';
@@ -108,6 +110,11 @@
     try { history.replaceState(null, '', url(cur) + (location.hash && !ids.includes(location.hash.slice(1)) ? location.hash : '')); } catch (e) {}
     draw(); o.onChange(cur);
   };
+
+  /* Website banners (js/banners.js) load on every page that has the top bar */
+  if (document.getElementById('site-header') && !window.HoloBanners && !document.querySelector('script[src="/js/banners.js"]')) {
+    const s = document.createElement('script'); s.src = '/js/banners.js'; s.defer = true; document.body.appendChild(s);
+  }
 
   window.HoloCommon = C;
 })();
