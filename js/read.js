@@ -1,4 +1,4 @@
-/* Read an article or research: /news/physics/title-abc123 and /research/physics/title-abc123 */
+/* Read an article or research: /news/physics/title-abc123 and /research/physics/title-abc123 (both free) */
 (function () {
   'use strict';
   const C = HoloCommon, esc = UI.esc, box = document.getElementById('read');
@@ -17,15 +17,8 @@
 
   async function research() {
     const { data: r } = await find('researches'); if (!r) return notFound();
-    const a = await Auth.access(), ok = (await C.premium()) || (a && a.can('manage_content'));
-    const head = '<a href="/research/' + esc(r.category) + '" style="color:var(--muted)">← ' + esc(C.catLabel(C.RES_CATS, r.category)) + '</a><h1>' + esc(r.title) + '</h1><div class="meta">' + C.date(r.created_at) + (r.authors ? ' · ' + esc(r.authors) : '') + '</div>';
-    if (!ok) {   // brief only: no photo, no links, no PDF
-      box.innerHTML = head + (r.summary ? '<div class="read-body"><p>' + esc(r.summary) + '</p></div>' : '') +
-        '<div class="box"><h3>🔒 Full research is for subscribers</h3><p>' + (a ? 'Subscribe to read the full paper, its images, links and files.' : 'Log in and subscribe to read the full paper, its images, links and files.') + '</p><div class="row">' +
-        (a ? '' : '<a class="btn btn-ghost btn-sm" href="/login?next=' + encodeURIComponent(location.pathname) + '">Log in</a>') + '<a class="btn btn-primary btn-sm" href="/funds/subscribe">See subscription packs</a></div></div>';
-      return;
-    }
-    let html = head + (r.cover_url ? '<img class="cover" src="' + esc(r.cover_url) + '" alt="">' : '') + (r.summary ? '<div class="read-body"><p><b>' + esc(r.summary) + '</b></p></div>' : '');
+    let html = '<a href="/research/' + esc(r.category) + '" style="color:var(--muted)">← ' + esc(C.catLabel(C.RES_CATS, r.category)) + '</a><h1>' + esc(r.title) + '</h1><div class="meta">' + C.date(r.created_at) + (r.authors ? ' · ' + esc(r.authors) : '') + '</div>' +
+      (r.cover_url ? '<img class="cover" src="' + esc(r.cover_url) + '" alt="">' : '') + (r.summary ? '<div class="read-body"><p><b>' + esc(r.summary) + '</b></p></div>' : '');
     const { data: c } = await sb.from('research_content').select('*').eq('research_id', r.id).maybeSingle();
     if (c) {
       html += '<div class="read-body">' + C.paras(c.body) + '</div><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">';
