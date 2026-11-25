@@ -1,7 +1,7 @@
-/* My dashboard: profile, plan, preferences and security in one page */
+/* My dashboard: profile, client request, preferences and security in one page */
 (function () {
   'use strict';
-  const esc = UI.esc, C = HoloCommon, $ = s => document.querySelector(s);
+  const esc = UI.esc, $ = s => document.querySelector(s);
 
   (async function () {
     if (!window.sb) return;
@@ -12,9 +12,6 @@
     const prof = p || {}, md = a.user.user_metadata || {};
     if (p && p.profile_completed === false) { UI.go('/welcome?next=/dashboard'); return; }
     const name = prof.full_name || md.full_name || md.name || '', avatar = prof.avatar_url || md.avatar_url || md.picture || '';
-    const premium = await C.premium();
-    const { data: subs } = await sb.from('subscriptions').select('expires_at,plans(name)').eq('user_id', uid).eq('status', 'active').order('expires_at', { ascending: false, nullsFirst: true }).limit(5);
-    const sub = (subs || []).find(s => !s.expires_at || new Date(s.expires_at) > new Date());
     const { data: cp } = await sb.from('client_profiles').select('request_status,status').eq('user_id', uid).maybeSingle();
 
     $('#dash').innerHTML =
@@ -23,7 +20,6 @@
       '<a class="btn btn-primary btn-sm" href="/welcome?edit=1">Edit profile</a></div></div>' +
 
       '<div class="cards">' +
-      '<div class="card stat-c"><span>⭐</span><div class="n gradient-text" style="font-size:1.6rem">' + (sub ? esc((sub.plans && sub.plans.name) || 'Active') : (premium ? 'Admin' : 'Free')) + '</div><small>' + (sub && sub.expires_at ? 'Until ' + C.date(sub.expires_at) : 'Your plan') + '</small></div>' +
       '<div class="card stat-c"><span>🙋</span><div class="n gradient-text" style="font-size:1.6rem">' + (cp ? (cp.status === 'suspended' ? 'Suspended' : (cp.request_status === 'open' ? 'Open' : 'Closed')) : 'None') + '</div><small>My client request</small></div></div>' +
 
       '<div class="panel"><h4>Quick links</h4><div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-ghost btn-sm" href="/clients/become-a-client">' + (cp ? 'Manage my request' : 'Become a client') + '</a><a class="btn btn-ghost btn-sm" href="/contact/staff-support">💬 Contact us</a>' + (a.isStaff ? '<a class="btn btn-primary btn-sm" href="/admin">Admin dashboard</a>' : '') + '</div></div>' +
