@@ -1,8 +1,8 @@
-/* Landing page: hero, scroll effects, team, previews of every page, custom blocks */
+/* Landing page: hero, scroll effects, team, custom blocks */
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const esc = UI.esc, C = HoloCommon;
+  const esc = UI.esc;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   let scrubWords = [];
@@ -100,28 +100,7 @@
     } catch (e) {}
   }
 
-  /* ---------- Previews of the other pages ---------- */
-  const card = (href, img, emoji, badge, a, extra) =>
-    '<a class="nc reveal" href="' + href + '"><div class="nc-img">' + (img ? '<img src="' + esc(img) + '" alt="" loading="lazy">' : emoji) + '</div><div class="nc-b">' + badge + '<h3>' + esc(a.title) + '</h3>' + (a.summary ? '<p>' + esc(a.summary) + '</p>' : '') + '<small>' + C.date(a.created_at) + extra + '</small></div></a>';
-
-  async function renderNews() {
-    const { data } = await sb.from('articles').select('id,slug,title,category,summary,cover_url,created_at').eq('published', true).order('created_at', { ascending: false }).limit(3);
-    if (!data || !data.length) return;
-    $('lp-news').innerHTML = data.map(a => card('/news/' + a.category + '/' + (a.slug || a.id), a.cover_url, '📰', '<span class="badge">' + esc(C.catLabel(C.NEWS_CATS, a.category)) + '</span>', a, '')).join('');
-    $('news').hidden = false; UI.observe($('news'));
-  }
-  async function renderResearch() {
-    const { data } = await sb.from('researches').select('id,slug,title,category,summary,cover_url,created_at').eq('published', true).order('created_at', { ascending: false }).limit(3);
-    if (!data || !data.length) return;
-    const prem = await C.premium();
-    $('lp-research').innerHTML = data.map(a => card('/research/' + a.category + '/' + (a.slug || a.id), a.cover_url, '🔬', '<span class="badge' + (prem ? '' : ' lockb') + '">' + (prem ? '' : '🔒 ') + esc(C.catLabel(C.RES_CATS, a.category)) + '</span>', a, '')).join('');
-    $('research').hidden = false; UI.observe($('research'));
-  }
-  async function renderPlans() {
-    const { data } = await sb.from('plans').select('name,price_text,period_text').eq('active', true).order('slot');
-    $('lp-plans').innerHTML = (data || []).map(p => '<a class="plan reveal" href="/funds/subscribe"><h3>' + esc(p.name) + '</h3><div class="price">' + (p.price_text ? esc(p.price_text) + (p.period_text ? ' <small>/ ' + esc(p.period_text) + '</small>' : '') : '<small>Price coming soon</small>') + '</div></a>').join('');
-    UI.observe($('funds'));
-  }
+  /* ---------- Custom blocks (news and research previews are in home-preview.js) ---------- */
   async function renderBlocks() {
     try {
       const { data } = await sb.from('site_blocks').select('*').eq('visible', true).order('position').order('created_at');
@@ -138,7 +117,7 @@
     addEventListener('scroll', onScrollRaf, { passive: true }); addEventListener('resize', onScrollRaf); onScroll();
     Site.ready.then(() => {
       decorate(); splitScrub();
-      Promise.allSettled([renderTeam(), renderNews(), renderResearch(), renderPlans(), renderBlocks()]).then(() => { Site.applySections((Site.content || {}).sections); UI.observe(); onScroll(); });
+      Promise.allSettled([renderTeam(), renderBlocks()]).then(() => { Site.applySections((Site.content || {}).sections); UI.observe(); onScroll(); });
       UI.observe(); onScroll();
     });
   });
