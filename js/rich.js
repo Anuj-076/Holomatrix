@@ -130,7 +130,7 @@
   }
   const ESC = '\uE000';
   function swap(root, from, to) {
-    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), list = [];
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n => (n.parentElement && n.parentElement.closest('code,pre,.katex')) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT }), list = [];
     while (w.nextNode()) if (w.currentNode.nodeValue.indexOf(from) > -1) list.push(w.currentNode);
     list.forEach(n => { n.nodeValue = n.nodeValue.split(from).join(to); });
   }
