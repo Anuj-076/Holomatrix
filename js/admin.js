@@ -15,18 +15,18 @@
   const R = {};
 
   const PERMS = {
-    administrator: ['Administrator', 'Every permission, including editing subscription packs and giving the Founder role. Give this only to people you fully trust.'],
+    administrator: ['Administrator', 'Every permission, including giving the Founder role. Give this only to people you fully trust.'],
     view_dashboard: ['View dashboard', 'Open the admin dashboard.'],
     manage_users: ['Manage users', 'See the user list.'],
     ban_users: ['Ban users', 'Ban or unban members ranked below you.'],
     manage_roles: ['Manage roles', 'Create, edit, reorder and delete roles.'],
     assign_roles: ['Assign roles', 'Give or remove roles from users.'],
     send_announcements: ['Send announcements', 'Email announcements to members.'],
-    edit_site_content: ['Edit website', 'Edit text, menu, people, blocks, images and links.'],
-    manage_content: ['Manage news & research', 'Upload, edit and delete articles and research papers.'],
+    edit_site_content: ['Edit website', 'Edit text, menu, people, blocks, banners, images and links.'],
+    manage_content: ['Manage news & research', 'Write, edit and delete articles and research papers.'],
     manage_clients: ['Manage clients', 'Hide, suspend or delete client requests.'],
     find_clients: ['Find clients', 'See the Find a client page, read open requests and chat with clients (helpers).'],
-    manage_subscriptions: ['Manage subscriptions', 'Grant or cancel member subscriptions.'],
+    manage_subscriptions: ['Manage subscriptions', 'Not used for now (packs are switched off).'],
     view_support: ['View support chats', 'Read member conversations.'],
     reply_support: ['Reply to support', 'Answer and close chats.'],
     view_analytics: ['View analytics', 'Reserved for analytics.'],
@@ -37,7 +37,7 @@
     ['General', ['view_dashboard', 'view_analytics', 'view_logs']],
     ['People', ['manage_users', 'ban_users', 'manage_roles', 'assign_roles']],
     ['Content', ['edit_site_content', 'manage_content', 'send_announcements']],
-    ['Members', ['manage_clients', 'find_clients', 'manage_subscriptions']],
+    ['Members', ['manage_clients', 'find_clients']],
     ['Support', ['view_support', 'reply_support']]
   ];
   const TABS = [
@@ -47,7 +47,6 @@
     { id: 'support', label: 'Support', ico: '💬', perm: ['view_support'] },
     { id: 'content', label: 'News & Research', ico: '📰', perm: ['manage_content'] },
     { id: 'clients', label: 'Clients', ico: '🧑‍💼', perm: ['manage_clients'] },
-    { id: 'subs', label: 'Subscriptions', ico: '⭐', perm: ['manage_subscriptions'] },
     { id: 'website', label: 'Website', ico: '🌐', perm: ['edit_site_content'] },
     { id: 'announce', label: 'Announcements', ico: '📣', perm: ['send_announcements'] },
     { id: 'logs', label: 'Audit logs', ico: '📜', perm: ['view_logs'] }
@@ -121,7 +120,7 @@
   async function route() {
     cleanup();
     const parts = (location.hash || '#overview').slice(1).split('/');
-    const t = TABS.find(x => x.id === parts[0] && allowed(x)) || TABS[0];
+    const t = TABS.find(x => x.id === parts[0] && allowed(x) && R[x.id]) || TABS[0];
     $$('.nav-i').forEach(a => a.classList.toggle('active', a.dataset.tab === t.id));
     $('#crumb').textContent = t.label; document.body.classList.remove('side-open');
     const v = $('#view'); v.classList.remove('view-in'); void v.offsetWidth; v.classList.add('view-in');
@@ -138,7 +137,6 @@
       ['Articles', '📰', can('manage_content') && (() => cnt('articles'))],
       ['Researches', '🔬', can('manage_content') && (() => cnt('researches'))],
       ['Client requests', '🧑‍💼', can('manage_clients') && (() => cnt('client_profiles'))],
-      ['Active subscriptions', '⭐', can('manage_subscriptions') && (() => cnt('subscriptions', q => q.eq('status', 'active')))],
       ['Team members', '🧑‍🔬', can('edit_site_content') && (() => cnt('staff_members'))],
       ['Custom blocks', '🧱', can('edit_site_content') && (() => cnt('site_blocks'))],
       ['Announcements sent', '📣', can('send_announcements') && (() => cnt('announcements'))]
@@ -358,61 +356,41 @@
     tick = setInterval(() => drawMsgs(), 30000);
   };
 
-  /* ================= NEWS & RESEARCH ================= */
+  /* ================= NEWS & RESEARCH (the page builder lives in js/article-editor.js) ================= */
+  function openEditor(kind, row, content, done) {
+    if (!window.HoloArticleEditor) return UI.toast('Upload the editor files first: js/article-editor.js, js/rich.js and css/article.css.', 'warn', 7000);
+    HoloArticleEditor.open({ kind, row, content, done });
+  }
   R.content = async (v, sub) => {
     sub = sub === 'research' ? 'research' : 'news';
-    v.innerHTML = '<h2 class="pt">News &amp; Research</h2><p class="psub">Upload articles and research papers. For research, the short summary is public; the full text, pictures, links and PDF are for subscribers only.</p><div class="seg"><a href="#content/news" class="' + (sub === 'news' ? 'on' : '') + '">📰 News</a><a href="#content/research" class="' + (sub === 'research' ? 'on' : '') + '">🔬 Researches</a></div><div id="cbox"><div class="loading">Loading…</div></div>';
+    v.innerHTML = '<h2 class="pt">News &amp; Research</h2><p class="psub">Write articles and research papers with the page builder. Everything is free to read. ' + (R.guide ? '<a href="#guide" style="color:var(--accent);text-decoration:underline">📘 Open the writing guide</a>' : '') + '</p><div class="seg"><a href="#content/news" class="' + (sub === 'news' ? 'on' : '') + '">📰 News</a><a href="#content/research" class="' + (sub === 'research' ? 'on' : '') + '">🔬 Researches</a></div><div id="cbox"><div class="loading">Loading…</div></div>';
     await (sub === 'news' ? contentNews : contentResearch)($('#cbox'));
   };
   async function contentNews(box) {
-    const { data, error } = await sb.from('articles').select('id,title,category,published,created_at,author_name').order('created_at', { ascending: false });
+    const { data, error } = await sb.from('articles').select('id,title,category,published,created_at,author_name,read_min').order('created_at', { ascending: false });
     if (error) throw error;
     const list = data || [];
     box.innerHTML = '<div class="toolbar"><button class="btn btn-primary btn-sm" id="anew">+ New article</button></div><div id="alist"></div>';
-    $('#alist').innerHTML = list.map(a => '<div class="rowitem ' + (a.published ? '' : 'dim') + '"><div class="grow"><b>' + esc(a.title) + '</b><small><span class="bdg">' + esc(HC.catLabel(HC.NEWS_CATS, a.category)) + '</span>' + fmt(a.created_at) + (a.author_name ? ' · ' + esc(a.author_name) : '') + (a.published ? '' : ' · draft') + '</small></div><div class="acts"><button class="ib" data-e="' + a.id + '">Edit</button><button class="ib danger" data-d="' + a.id + '">Delete</button></div></div>').join('') || '<div class="empty">No articles yet.</div>';
+    $('#alist').innerHTML = list.map(a => '<div class="rowitem ' + (a.published ? '' : 'dim') + '"><div class="grow"><b>' + esc(a.title) + '</b><small><span class="bdg">' + esc(HC.catLabel(HC.NEWS_CATS, a.category)) + '</span>' + fmt(a.created_at) + (a.author_name ? ' · ' + esc(a.author_name) : '') + (a.read_min ? ' · ' + a.read_min + ' min read' : '') + (a.published ? '' : ' · draft') + '</small></div><div class="acts"><button class="ib" data-e="' + a.id + '">Edit</button><button class="ib danger" data-d="' + a.id + '">Delete</button></div></div>').join('') || '<div class="empty">No articles yet.</div>';
     const reload = () => contentNews(box);
-    $('#anew').onclick = () => articleDialog(null, reload);
+    $('#anew').onclick = () => openEditor('news', null, null, reload);
     $('#alist').onclick = async e => {
       const ed = e.target.closest('[data-e]'), dl = e.target.closest('[data-d]');
-      if (ed) { const { data: a } = await sb.from('articles').select('*').eq('id', ed.dataset.e).single(); articleDialog(a, reload); }
+      if (ed) { const { data: a } = await sb.from('articles').select('*').eq('id', ed.dataset.e).single(); openEditor('news', a, null, reload); }
       if (dl) { if (!(await UI.confirm('Delete this article?', 'It is removed from the website.', { confirmText: 'Delete', danger: true }))) return; const { error } = await sb.from('articles').delete().eq('id', dl.dataset.d); if (error) return fail(error); reload(); }
     };
   }
-  function articleDialog(a, done) {
-    const p = a ? clone(a) : { title: '', category: 'physics', summary: '', body: '', cover_url: '', published: true };
-    const cats = HC.NEWS_CATS.filter(c => c[0] !== 'all');
-    const d = dialog(a ? 'Edit article' : 'New article',
-      '<div class="field"><label>Title *</label><input class="input" id="at" maxlength="200" value="' + esc(p.title) + '"></div>' +
-      '<div class="two"><div class="field"><label>Category *</label><select class="input" id="ac">' + cats.map(c => '<option value="' + c[0] + '"' + (p.category === c[0] ? ' selected' : '') + '>' + c[1] + '</option>').join('') + '</select></div>' +
-      '<div class="field"><label>Cover image</label><div style="display:flex;gap:8px;align-items:center"><div class="thumb wide" id="acv"></div><button type="button" class="ib" id="aup">Upload</button><button type="button" class="ib" id="arm">✕</button></div></div></div>' +
-      '<div class="field"><label>Short summary (shown on the card)</label><textarea class="input" id="as" maxlength="400" style="min-height:80px">' + esc(p.summary || '') + '</textarea></div>' +
-      '<div class="field"><label>Article text (blank line = new paragraph)</label><textarea class="input" id="ab" style="min-height:240px">' + esc(p.body || '') + '</textarea></div>' +
-      '<label class="chk"><input type="checkbox" id="apub" ' + (p.published ? 'checked' : '') + '> Published (untick to keep as a draft)</label>' +
-      '<div class="dlg-f"><button class="btn btn-ghost btn-sm" id="acancel">Cancel</button><button class="btn btn-primary btn-sm" id="asave">Save article</button></div>', { wide: true });
-    const el = d.el, cover = () => { $('#acv', el).innerHTML = p.cover_url ? '<img src="' + esc(p.cover_url) + '" alt="">' : '—'; };
-    cover();
-    $('#aup', el).onclick = () => { const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/png,image/jpeg,image/webp,image/gif'; inp.onchange = async () => { if (!inp.files[0]) return; UI.toast('Uploading…'); try { p.cover_url = await HoloMedia.upload(inp.files[0], { folder: 'news', max: 1600 }); cover(); UI.toast('Cover ready.', 'success'); } catch (e) { fail(e); } }; inp.click(); };
-    $('#arm', el).onclick = () => { p.cover_url = ''; cover(); };
-    $('#acancel', el).onclick = d.close;
-    $('#asave', el).onclick = async () => {
-      const title = $('#at', el).value.trim(); if (!title) return UI.toast('Please enter a title.', 'warn');
-      const row = { title, category: $('#ac', el).value, summary: $('#as', el).value.trim() || null, body: $('#ab', el).value.trim() || null, cover_url: p.cover_url || null, published: $('#apub', el).checked, updated_at: new Date().toISOString() };
-      const res = a ? await sb.from('articles').update(row).eq('id', a.id) : await sb.from('articles').insert(Object.assign(row, { author_id: A.user.id, author_name: myName() }));
-      if (res.error) return fail(res.error);
-      UI.toast('Article saved.', 'success'); d.close(); done();
-    };
-  }
   async function contentResearch(box) {
-    const { data, error } = await sb.from('researches').select('id,title,category,published,created_at,authors').order('created_at', { ascending: false });
+    const { data, error } = await sb.from('researches').select('id,title,category,published,created_at,authors,read_min').order('created_at', { ascending: false });
     if (error) throw error;
     const list = data || [];
     box.innerHTML = '<div class="toolbar"><button class="btn btn-primary btn-sm" id="rnew">+ New research</button></div><div id="rlist2"></div>';
-    $('#rlist2').innerHTML = list.map(r => '<div class="rowitem ' + (r.published ? '' : 'dim') + '"><div class="grow"><b>' + esc(r.title) + '</b><small><span class="bdg warn">★ Premium</span><span class="bdg">' + esc(HC.catLabel(HC.RES_CATS, r.category)) + '</span>' + fmt(r.created_at) + (r.authors ? ' · ' + esc(r.authors) : '') + (r.published ? '' : ' · draft') + '</small></div><div class="acts"><button class="ib" data-e="' + r.id + '">Edit</button><button class="ib danger" data-d="' + r.id + '">Delete</button></div></div>').join('') || '<div class="empty">No researches yet.</div>';
+    $('#rlist2').innerHTML = list.map(r => '<div class="rowitem ' + (r.published ? '' : 'dim') + '"><div class="grow"><b>' + esc(r.title) + '</b><small><span class="bdg">' + esc(HC.catLabel(HC.RES_CATS, r.category)) + '</span>' + fmt(r.created_at) + (r.authors ? ' · ' + esc(r.authors) : '') + (r.read_min ? ' · ' + r.read_min + ' min read' : '') + (r.published ? '' : ' · draft') + '</small></div><div class="acts"><button class="ib" data-e="' + r.id + '">Edit</button><button class="ib danger" data-d="' + r.id + '">Delete</button></div></div>').join('') || '<div class="empty">No researches yet.</div>';
     const reload = () => contentResearch(box);
-    $('#rnew').onclick = () => researchDialog(null, null, reload);
+    $('#rnew').onclick = () => openEditor('research', null, null, reload);
     $('#rlist2').onclick = async e => {
       const ed = e.target.closest('[data-e]'), dl = e.target.closest('[data-d]');
-      if (ed) { const [r, c] = await Promise.all([sb.from('researches').select('*').eq('id', ed.dataset.e).single(), sb.from('research_content').select('*').eq('research_id', ed.dataset.e).maybeSingle()]); researchDialog(r.data, c.data, reload); }
+      if (ed) { const [r, c] = await Promise.all([sb.from('researches').select('*').eq('id', ed.dataset.e).single(), sb.from('research_content').select('*').eq('research_id', ed.dataset.e).maybeSingle()]); openEditor('research', r.data, c.data, reload); }
       if (dl) {
         if (!(await UI.confirm('Delete this research?', 'The paper and its file are removed.', { confirmText: 'Delete', danger: true }))) return;
         const c = await sb.from('research_content').select('file_path').eq('research_id', dl.dataset.d).maybeSingle();
@@ -420,54 +398,6 @@
         if (c.data && c.data.file_path) sb.storage.from('research-files').remove([c.data.file_path]);
         reload();
       }
-    };
-  }
-  function researchDialog(r, c, done) {
-    const p = r ? clone(r) : { title: '', category: 'physics', summary: '', authors: '', cover_url: '', published: true };
-    const k = c ? clone(c) : { body: '', external_url: '', file_path: '' };
-    const cats = HC.RES_CATS.filter(x => x[0] !== 'all');
-    const d = dialog(r ? 'Edit research' : 'New research',
-      '<div class="field"><label>Title *</label><input class="input" id="rt" maxlength="250" value="' + esc(p.title) + '"></div>' +
-      '<div class="two"><div class="field"><label>Category *</label><select class="input" id="rc">' + cats.map(x => '<option value="' + x[0] + '"' + (p.category === x[0] ? ' selected' : '') + '>' + x[1] + '</option>').join('') + '</select></div><div class="field"><label>Authors</label><input class="input" id="ra" maxlength="200" value="' + esc(p.authors || '') + '"></div></div>' +
-      '<div class="field"><label>Brief (public: this is all that non-subscribers see)</label><textarea class="input" id="rs" maxlength="500" style="min-height:90px">' + esc(p.summary || '') + '</textarea></div>' +
-      '<h4 style="margin:14px 0 8px">Subscribers only (hidden from everyone else)</h4>' +
-      '<div class="field"><label>Cover image</label><div style="display:flex;gap:8px;align-items:center"><div class="thumb wide" id="rcv"></div><button type="button" class="ib" id="rup">Upload</button><button type="button" class="ib" id="rrm">✕</button></div></div>' +
-      '<div class="field"><label>Full text (blank line = new paragraph)</label><textarea class="input" id="rb" style="min-height:200px">' + esc(k.body || '') + '</textarea></div>' +
-      '<div class="two"><div class="field"><label>Original source link (optional)</label><input class="input" id="rx" placeholder="https://…" value="' + esc(k.external_url || '') + '"></div>' +
-      '<div class="field"><label>PDF file (max 25 MB)</label><div style="display:flex;gap:8px;align-items:center"><span id="rf" class="hint" style="margin:0">' + (k.file_path ? '📄 PDF attached' : 'No file') + '</span><button type="button" class="ib" id="rfup">Upload PDF</button><button type="button" class="ib" id="rfrm">✕</button></div></div></div>' +
-      '<label class="chk"><input type="checkbox" id="rpub" ' + (p.published ? 'checked' : '') + '> Published (untick to keep as a draft)</label>' +
-      '<div class="dlg-f"><button class="btn btn-ghost btn-sm" id="rcancel">Cancel</button><button class="btn btn-primary btn-sm" id="rsave2">Save research</button></div>', { wide: true });
-    const el = d.el, cover = () => { $('#rcv', el).innerHTML = p.cover_url ? '<img src="' + esc(p.cover_url) + '" alt="">' : '—'; };
-    cover();
-    $('#rup', el).onclick = () => { const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/png,image/jpeg,image/webp,image/gif'; inp.onchange = async () => { if (!inp.files[0]) return; UI.toast('Uploading…'); try { p.cover_url = await HoloMedia.upload(inp.files[0], { folder: 'research', max: 1600 }); cover(); UI.toast('Cover ready.', 'success'); } catch (e) { fail(e); } }; inp.click(); };
-    $('#rrm', el).onclick = () => { p.cover_url = ''; cover(); };
-    $('#rfup', el).onclick = () => {
-      const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/pdf';
-      inp.onchange = async () => {
-        const f = inp.files[0]; if (!f) return;
-        if (f.type !== 'application/pdf') return UI.toast('Please choose a PDF file.', 'warn');
-        if (f.size > 25 * 1024 * 1024) return UI.toast('PDF is too large (max 25 MB).', 'warn');
-        UI.toast('Uploading PDF…');
-        const path = 'papers/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.pdf';
-        const { error } = await sb.storage.from('research-files').upload(path, f, { contentType: 'application/pdf' });
-        if (error) return fail(error);
-        k.file_path = path; $('#rf', el).textContent = '📄 PDF attached'; UI.toast('PDF ready. Press Save.', 'success');
-      };
-      inp.click();
-    };
-    $('#rfrm', el).onclick = () => { k.file_path = ''; $('#rf', el).textContent = 'No file'; };
-    $('#rcancel', el).onclick = d.close;
-    $('#rsave2', el).onclick = async () => {
-      const title = $('#rt', el).value.trim(); if (!title) return UI.toast('Please enter a title.', 'warn');
-      const ext = $('#rx', el).value.trim(), extUrl = ext ? HC.normUrl(ext) : '';
-      if (ext && !extUrl) return UI.toast('The source link is not valid.', 'warn');
-      const row = { title, category: $('#rc', el).value, authors: $('#ra', el).value.trim() || null, summary: $('#rs', el).value.trim() || null, cover_url: p.cover_url || null, published: $('#rpub', el).checked };
-      let id = r && r.id;
-      if (r) { const res = await sb.from('researches').update(row).eq('id', id); if (res.error) return fail(res.error); }
-      else { const res = await sb.from('researches').insert(row).select().single(); if (res.error) return fail(res.error); id = res.data.id; }
-      const cr = await sb.from('research_content').upsert({ research_id: id, body: $('#rb', el).value.trim() || null, external_url: extUrl || null, file_path: k.file_path || null }, { onConflict: 'research_id' });
-      if (cr.error) return fail(cr.error);
-      UI.toast('Research saved.', 'success'); d.close(); done();
     };
   }
 
@@ -492,67 +422,6 @@
       if (dl) { const c = list.find(x => x.id === dl.dataset.d); if (!(await UI.confirm('Delete “' + c.display_name + '”?', 'The request is removed. The member can post a new one.', { confirmText: 'Delete', danger: true }))) return; const { error } = await sb.from('client_profiles').delete().eq('id', c.id); if (error) return fail(error); list.splice(list.indexOf(c), 1); draw($('#csearch').value); }
     };
   };
-
-  /* ================= SUBSCRIPTIONS ================= */
-  R.subs = async v => {
-    const [pl, sr] = await Promise.all([sb.from('plans').select('*').order('slot'), sb.from('subscriptions').select('*, plans(name), profiles(full_name,email)').order('created_at', { ascending: false }).limit(200)]);
-    if (pl.error) throw pl.error;
-    const plans = pl.data || [], subs = sr.data || [], isAdm = A.isAdmin;
-    const stat = s => s.status === 'cancelled' ? ['Cancelled', 'tag-bad'] : (s.expires_at && new Date(s.expires_at) <= new Date() ? ['Expired', 'tag-mut'] : ['Active', 'tag-ok']);
-    v.innerHTML = '<h2 class="pt">Subscriptions</h2><p class="psub">Five packs. Payments are connected later, so grant packs by hand for now.</p>' +
-      '<div class="plgrid">' + plans.map(p => '<div class="plbox ' + (p.active ? '' : 'off') + '"><h4>' + esc(p.name) + '</h4><small>' + (p.price_text ? esc(p.price_text) + (p.period_text ? ' / ' + esc(p.period_text) : '') : 'No price yet') + ' · ' + p.duration_days + ' days</small><small>' + ((p.features || []).length) + ' feature(s)' + (p.active ? '' : ' · hidden') + '</small>' + (isAdm ? '<button class="ib" data-pe="' + p.id + '" style="margin-top:8px;width:max-content">Edit pack</button>' : '') + '</div>').join('') + '</div>' +
-      (isAdm ? '' : '<p class="hint" style="margin:-10px 0 20px">Only people with the Administrator permission can edit packs.</p>') +
-      '<div class="toolbar"><h4 class="grow" style="margin:0">Member subscriptions</h4><button class="btn btn-primary btn-sm" id="grant">+ Grant pack</button></div>' +
-      '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Member</th><th>Pack</th><th>Status</th><th>Expires</th><th>Source</th><th></th></tr></thead><tbody id="stb"></tbody></table></div>';
-    $('#stb').innerHTML = subs.map(s => { const st = stat(s), u = s.profiles || {}; return '<tr><td><div class="who">' + avatar(u) + '<div><b>' + esc(u.full_name || '—') + '</b><small>' + esc(u.email || '') + '</small></div></div></td><td>' + esc((s.plans && s.plans.name) || '—') + '</td><td><span class="tag ' + st[1] + '">' + st[0] + '</span></td><td>' + (s.expires_at ? new Date(s.expires_at).toLocaleDateString() : 'Never') + '</td><td>' + esc(s.provider) + '</td><td><div class="acts">' + (st[0] === 'Active' ? '<button class="ib danger" data-c="' + s.id + '">Cancel</button>' : '') + '</div></td></tr>'; }).join('') || '<tr><td colspan="6"><div class="empty">No subscriptions yet.</div></td></tr>';
-    v.onclick = async e => {
-      const pe = e.target.closest('[data-pe]'), c = e.target.closest('[data-c]');
-      if (pe) planDialog(plans.find(p => p.id === pe.dataset.pe), () => R.subs(v));
-      if (c) { if (!(await UI.confirm('Cancel this subscription?', 'The member loses premium access immediately.', { confirmText: 'Cancel it', danger: true }))) return; const { error } = await sb.from('subscriptions').update({ status: 'cancelled' }).eq('id', c.dataset.c); if (error) return fail(error); R.subs(v); }
-    };
-    $('#grant').onclick = () => grantDialog(plans.filter(p => p.active), () => R.subs(v));
-  };
-  function planDialog(p, done) {
-    const d = dialog('Edit ' + p.name,
-      '<div class="two"><div class="field"><label>Pack name</label><input class="input" id="pn" maxlength="60" value="' + esc(p.name) + '"></div><div class="field"><label>Duration (days)</label><input class="input" id="pd" type="number" min="1" max="3650" value="' + p.duration_days + '"></div></div>' +
-      '<div class="two"><div class="field"><label>Price (text, e.g. $9 or ₹499)</label><input class="input" id="pp" maxlength="40" value="' + esc(p.price_text || '') + '"></div><div class="field"><label>Period (e.g. month)</label><input class="input" id="pe" maxlength="30" value="' + esc(p.period_text || '') + '"></div></div>' +
-      '<div class="field"><label>Description</label><textarea class="input" id="pds" maxlength="300" style="min-height:80px">' + esc(p.description || '') + '</textarea></div>' +
-      '<div class="field"><label>Features (one per line)</label><textarea class="input" id="pf" style="min-height:130px">' + esc((p.features || []).join('\n')) + '</textarea></div>' +
-      '<label class="chk"><input type="checkbox" id="pa" ' + (p.active ? 'checked' : '') + '> Show this pack on the website</label>' +
-      '<div class="dlg-f"><button class="btn btn-ghost btn-sm" id="pc">Cancel</button><button class="btn btn-primary btn-sm" id="ps">Save pack</button></div>');
-    const el = d.el; $('#pc', el).onclick = d.close;
-    $('#ps', el).onclick = async () => {
-      const name = $('#pn', el).value.trim(); if (!name) return UI.toast('Please enter a name.', 'warn');
-      const row = { name, price_text: $('#pp', el).value.trim() || null, period_text: $('#pe', el).value.trim() || null, description: $('#pds', el).value.trim() || null, features: $('#pf', el).value.split('\n').map(x => x.trim()).filter(Boolean), duration_days: Math.max(1, +$('#pd', el).value || 30), active: $('#pa', el).checked };
-      const { error } = await sb.from('plans').update(row).eq('id', p.id); if (error) return fail(error);
-      UI.toast('Pack saved.', 'success'); d.close(); done();
-    };
-  }
-  function grantDialog(plans, done) {
-    let chosen = null;
-    const d = dialog('Grant a pack',
-      '<div class="field"><label>Find member by email</label><input class="input" id="ge" placeholder="Type part of an email…"></div><div class="pick" id="gl"></div>' +
-      '<div class="two"><div class="field"><label>Pack</label><select class="input" id="gp">' + plans.map(p => '<option value="' + p.id + '" data-days="' + p.duration_days + '">' + esc(p.name) + '</option>').join('') + '</select></div><div class="field"><label>Days (0 = never expires)</label><input class="input" id="gd" type="number" min="0" max="3650" value="' + ((plans[0] && plans[0].duration_days) || 30) + '"></div></div>' +
-      '<div class="dlg-f"><button class="btn btn-ghost btn-sm" id="gc">Cancel</button><button class="btn btn-primary btn-sm" id="gs">Grant pack</button></div>');
-    const el = d.el; let timer;
-    $('#gp', el).onchange = e => { $('#gd', el).value = e.target.selectedOptions[0].dataset.days; };
-    $('#ge', el).oninput = e => {
-      clearTimeout(timer);
-      timer = setTimeout(async () => {
-        const t = e.target.value.trim().replace(/[%_,()]/g, ''); if (t.length < 2) { $('#gl', el).innerHTML = ''; return; }
-        const { data } = await sb.from('profiles').select('id,full_name,email,avatar_url').ilike('email', '%' + t + '%').limit(8);
-        $('#gl', el).innerHTML = (data || []).map(u => '<button type="button" data-u="' + u.id + '">' + avatar(u) + '<span><b>' + esc(u.full_name || '—') + '</b><br><small>' + esc(u.email) + '</small></span></button>').join('') || '<small class="hint">No matches.</small>';
-        $$('#gl [data-u]', el).forEach(b => b.onclick = () => { chosen = b.dataset.u; $$('#gl button', el).forEach(x => x.classList.toggle('on', x === b)); });
-      }, 250);
-    };
-    $('#gc', el).onclick = d.close;
-    $('#gs', el).onclick = async () => {
-      if (!chosen) return UI.toast('Pick a member first.', 'warn');
-      const days = Math.max(0, +$('#gd', el).value || 0);
-      const { error } = await sb.from('subscriptions').insert({ user_id: chosen, plan_id: $('#gp', el).value, status: 'active', provider: 'manual', granted_by: A.user.id, expires_at: days ? new Date(Date.now() + days * 86400000).toISOString() : null });
-      if (error) return fail(error); UI.toast('Pack granted.', 'success'); d.close(); done();
-    };
-  }
 
   /* ================= WEBSITE ================= */
   const ICON_OPTS = '<option value="auto">Auto-detect</option>' + HoloIcons.names.map(n => '<option value="' + n + '">' + HoloIcons.label(n) + '</option>').join('');
@@ -715,11 +584,11 @@
     const row = (it, i, j) => {
       const idx = j === undefined ? 'data-i="' + i + '"' : 'data-i="' + i + '" data-j="' + j + '"';
       return '<div class="mrow" ' + idx + '><input class="input" data-k="label" placeholder="Name" value="' + esc(it.label || '') + '"><input class="input" data-k="href" placeholder="/page/section" value="' + esc(it.href || '') + '">' +
-        '<label class="chk"><input type="checkbox" data-k="premium" ' + (it.premium ? 'checked' : '') + '> Premium heading</label><label class="chk"><input type="checkbox" data-k="visible" ' + (it.visible !== false ? 'checked' : '') + '> Show</label>' +
+        '<label class="chk"><input type="checkbox" data-k="visible" ' + (it.visible !== false ? 'checked' : '') + '> Show</label>' +
         '<span class="acts"><button class="ib" data-mv="-1" ' + idx + '>↑</button><button class="ib" data-mv="1" ' + idx + '>↓</button><button class="ib danger" data-del ' + idx + '>✕</button></span></div>';
     };
     const draw = () => {
-      box.innerHTML = '<p class="hint" style="margin-bottom:14px">Items in the top bar. “Premium heading” adds a “★ Premium features” line at the top of that dropdown. Sub-items marked with a permission (like Find a client) only show to people who have it.</p><div id="mtree">' +
+      box.innerHTML = '<p class="hint" style="margin-bottom:14px">Items in the top bar. Items with sub-items get a dropdown arrow. Sub-items marked with a permission (like Find a client) only show to people who have it.</p><div id="mtree">' +
         nav.map((it, i) => '<div class="mtop">' + row(it, i) + '<div class="mkids">' + (it.children || []).map((k, j) => row(k, i, j)).join('') + '<button class="ib" data-addk="' + i + '">+ Add sub-item</button></div></div>').join('') + '</div>' +
         '<div class="toolbar"><button class="ib" id="maddt">+ Add menu item</button><span class="grow"></span><button class="btn btn-ghost btn-sm" id="mreset">Reset to default</button><button class="btn btn-primary btn-sm" id="msave">Save menu</button></div>';
     };
@@ -772,7 +641,7 @@
   async function webPages(box) {
     box.innerHTML = '<div class="pcards">' +
       [['/', 'Landing page', 'Headings, founder info, buttons, colours, fonts, section order, extra items.'], ['/news', 'News', 'Page title and intro.'], ['/research', 'Researches', 'Page title and intro.'], ['/about/holomatrix', 'About Holomatrix', 'All Holomatrix text, FAQ answers and links.'], ['/about/holomatrix-team', 'Holomatrix Team', 'Heading and extra items. Add members in the Holomatrix Team tab.'],
-        ['/clients/become-a-client', 'Clients', 'Title, intro and the payment warning text.'], ['/funds/donate', 'Funds → Donate', 'Edit the donation note and button labels.'], ['/contact/ai-support', 'Contact us', 'Title, intro and the AI knowledge box.'], ['/privacy', 'Privacy Policy', 'Click the text and edit it.'], ['/terms', 'Terms of Service', 'Click the text and edit it.']]
+        ['/clients/become-a-client', 'Clients', 'Title, intro and the payment warning text.'], ['/contribute/donate', 'Contribute → Donate', 'Edit the donation note and button labels.'], ['/contact/ai-support', 'Contact us', 'Title, intro and the AI knowledge box.'], ['/privacy', 'Privacy Policy', 'Click the text and edit it.'], ['/terms', 'Terms of Service', 'Click the text and edit it.']]
         .map(p => '<a class="card" href="' + p[0] + '"><h4>' + p[1] + '</h4><p>' + p[2] + '</p></a>').join('') + '</div>' +
       '<div class="panel" style="margin-top:20px"><h4>How the visual editor works</h4><p class="psub" style="margin:0">Open a page above while logged in, then click <b>✏️ Edit site</b> at the bottom. Click any text to type (a small bar above it changes its <b>colour and size</b>), click a picture to change it, and use <b>🎨 Design</b> to add text or image placeholders and social-link blocks, change colours, fonts, links and section order. Press <b>Save</b> and everyone sees it.</p></div>';
   }
@@ -787,7 +656,7 @@
   }
   R.announce = async v => {
     const [roles, hist] = await Promise.all([sb.from('roles').select('id,name').order('position'), sb.from('announcements').select('*').order('created_at', { ascending: false }).limit(20)]);
-    v.innerHTML = '<h2 class="pt">Announcements</h2><p class="psub">Emails go out with the Holomatrix logo, only to verified, non-banned members who haven\'t opted out.</p>' +
+    v.innerHTML = '<h2 class="pt">Announcements</h2><p class="psub">Emails go out with the Holomatrix logo, only to verified, non-banned members who haven\'t opted out. For a banner on the website itself, use the Banners tab.</p>' +
       '<div class="panel"><div class="field"><label>Subject</label><input class="input" id="asub" maxlength="150"></div><div class="field"><label>Message (blank line = new paragraph)</label><textarea class="input" id="abody" style="min-height:180px" maxlength="5000"></textarea></div>' +
       '<div class="field"><label>Send to</label><select class="input" id="aaud"><option value="all">All members</option>' + (roles.data || []).map(r => '<option value="role:' + r.id + '">Role: ' + esc(r.name) + '</option>').join('') + '</select></div>' +
       '<div class="dlg-f"><button class="btn btn-ghost btn-sm" id="aprev">Preview email</button><button class="btn btn-primary btn-sm" id="asend">Send…</button></div><p class="hint">Brevo\'s free plan allows about 300 emails a day. Sends over 290 recipients are refused.</p></div>' +
@@ -811,7 +680,7 @@
   R.logs = async v => {
     await names();
     const PS = 50; let rows = [], done = false;
-    v.innerHTML = '<h2 class="pt">Audit logs</h2><p class="psub">Every change to roles, team, content, packs and subscriptions, recorded automatically.</p><div class="toolbar"><input class="input" id="lsearch" placeholder="Filter by person or action…"></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>When</th><th>Who</th><th>What</th></tr></thead><tbody id="ltb"></tbody></table></div><div class="toolbar" style="margin-top:16px;justify-content:center"><button class="btn btn-ghost btn-sm" id="lmore">Load more</button></div>';
+    v.innerHTML = '<h2 class="pt">Audit logs</h2><p class="psub">Every change to roles, team, content and more, recorded automatically.</p><div class="toolbar"><input class="input" id="lsearch" placeholder="Filter by person or action…"></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>When</th><th>Who</th><th>What</th></tr></thead><tbody id="ltb"></tbody></table></div><div class="toolbar" style="margin-top:16px;justify-content:center"><button class="btn btn-ghost btn-sm" id="lmore">Load more</button></div>';
     const draw = () => {
       const q = ($('#lsearch').value || '').toLowerCase();
       $('#ltb').innerHTML = rows.filter(l => !q || (l.actor_email || '').toLowerCase().includes(q) || describe(l).toLowerCase().includes(q)).map(l => '<tr><td class="mono">' + fmt(l.created_at) + '</td><td>' + esc(l.actor_email || 'system') + '</td><td>' + esc(describe(l)) + '</td></tr>').join('') || '<tr><td colspan="3"><div class="empty">No entries.</div></td></tr>';
@@ -821,6 +690,16 @@
     $('#lsearch').oninput = draw; $('#lmore').onclick = load;
     await load();
   };
+
+  /* ================= EXTENSIONS (Banners, Writing guide, ...) plug in here ================= */
+  window.HoloAdmin = {
+    R, TABS, dialog, fail, saveContent, getContent, can, esc, avatar, myName,
+    get user() { return A && A.user; },
+    addTab(tab, after) { const i = TABS.findIndex(x => x.id === after); TABS.splice(i < 0 ? TABS.length : i + 1, 0, tab); }
+  };
+  const ext = window.HoloAdminExt = window.HoloAdminExt || [];
+  const runExt = f => { try { f(window.HoloAdmin); } catch (e) { console.warn('Admin extension failed:', e); } return 1; };
+  ext.splice(0).forEach(runExt); ext.push = runExt;
 
   /* ================= BOOT ================= */
   (async function boot() {
