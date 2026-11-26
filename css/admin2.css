@@ -1,10 +1,17 @@
 /* Admin extras. Left menu now scrolls, dropdown lists are readable */
-.side { height: 100vh; height: 100dvh; overflow: hidden; }
+.side { height: 100vh; height: 100dvh; overflow: hidden; padding: 16px 12px; }
 .side nav { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; align-content: start; padding-bottom: 10px; }
 .side .brand, .side-foot { flex: none; }
 select option, select optgroup { background-color: var(--bg-2); color: var(--text); }
 
-.mrow { display: grid; grid-template-columns: 1fr 1.3fr auto auto auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+/* small round logo + small name at the top-left (same look as the other pages) */
+.side .brand { display: flex; align-items: center; gap: 10px; padding: 2px 8px 12px; font-family: var(--font-head); font-weight: 700; font-size: 1rem; }
+.side .brand .logo-slot { display: block; flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); }
+.side .brand .logo-slot img { width: 100%; height: 100%; object-fit: cover; }
+.nav-i { padding: 9px 12px; }
+.side-foot { padding: 10px 8px 2px; gap: 8px; }
+
+.mrow { display: grid; grid-template-columns: 1fr 1.3fr auto auto; gap: 8px; align-items: center; margin-bottom: 8px; }
 .mrow .input { padding: 9px 11px; font-size: 0.88rem; }
 .mrow .chk { margin: 0; font-size: 0.82rem; white-space: nowrap; }
 .mtop { border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 14px; background: var(--surface); }
