@@ -9,24 +9,35 @@
   const notFound = () => { box.innerHTML = '<div class="box"><h3>Not found</h3><p>This page doesn\'t exist or isn\'t published.</p><a class="btn btn-primary btn-sm" href="' + back + '">Back</a></div>'; };
   const find = t => sb.from(t).select('*').eq(isId ? 'id' : 'slug', key).maybeSingle();
 
+  /* article styles + the shared scripts load only on this page */
+  { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/css/article.css'; document.head.appendChild(l); }
+  const need = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('Could not load ' + src)); document.body.appendChild(s); });
+  const libs = need('/js/rich.js').then(() => need('/js/article-view.js'));
+
+  async function related(table, row) {
+    const { data } = await sb.from(table).select('id,slug,title,category,cover_url,created_at,read_min').eq('published', true).eq('category', row.category).neq('id', row.id).order('created_at', { ascending: false }).limit(3);
+    if (!data || !data.length) return;
+    const sec = document.createElement('section'); sec.className = 'ar-rel';
+    sec.innerHTML = '<h3>More in ' + esc(C.catLabel(type === 'research' ? C.RES_CATS : C.NEWS_CATS, row.category)) + '</h3><div class="ar-rel-g">' + data.map(x =>
+      '<a class="nc" href="/' + type + '/' + esc(x.category) + '/' + esc(x.slug || x.id) + '"><div class="nc-img">' + (x.cover_url && /^https:\/\//.test(x.cover_url) ? '<img src="' + esc(x.cover_url) + '" alt="" loading="lazy">' : (type === 'news' ? '📰' : '🔬')) + '</div><div class="nc-b"><h3>' + esc(x.title) + '</h3><small>' + C.date(x.created_at) + (x.read_min ? ' · ' + x.read_min + ' min read' : '') + '</small></div></a>').join('') + '</div>';
+    box.appendChild(sec);
+  }
+
   async function news() {
     const { data } = await find('articles'); if (!data) return notFound();
-    box.innerHTML = '<a href="/news/' + esc(data.category) + '" style="color:var(--muted)">← ' + esc(C.catLabel(C.NEWS_CATS, data.category)) + '</a><h1>' + esc(data.title) + '</h1><div class="meta">' + C.date(data.created_at) + (data.author_name ? ' · ' + esc(data.author_name) : '') + '</div>' +
-      (data.cover_url ? '<img class="cover" src="' + esc(data.cover_url) + '" alt="">' : '') + '<div class="read-body">' + C.paras(data.body || data.summary) + '</div>';
+    await libs;
+    box.innerHTML = HoloArticleView.html({ type: 'news', title: data.title, category: data.category, summary: data.summary, cover_url: data.cover_url, author: data.author_name, date: data.created_at, read_min: data.read_min, blocks: data.blocks, legacy: data.body, files: data.files, toc: !(data.opts && data.opts.toc === false) });
+    HoloArticleView.mount(box); related('articles', data);
   }
 
   async function research() {
     const { data: r } = await find('researches'); if (!r) return notFound();
-    let html = '<a href="/research/' + esc(r.category) + '" style="color:var(--muted)">← ' + esc(C.catLabel(C.RES_CATS, r.category)) + '</a><h1>' + esc(r.title) + '</h1><div class="meta">' + C.date(r.created_at) + (r.authors ? ' · ' + esc(r.authors) : '') + '</div>' +
-      (r.cover_url ? '<img class="cover" src="' + esc(r.cover_url) + '" alt="">' : '') + (r.summary ? '<div class="read-body"><p><b>' + esc(r.summary) + '</b></p></div>' : '');
     const { data: c } = await sb.from('research_content').select('*').eq('research_id', r.id).maybeSingle();
-    if (c) {
-      html += '<div class="read-body">' + C.paras(c.body) + '</div><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">';
-      if (c.file_path) { const s = await sb.storage.from('research-files').createSignedUrl(c.file_path, 3600); if (s.data && s.data.signedUrl) html += '<a class="btn btn-primary btn-sm" href="' + esc(s.data.signedUrl) + '" target="_blank" rel="noopener noreferrer">📄 Open PDF</a>'; }
-      if (c.external_url && /^https?:\/\//i.test(c.external_url)) html += '<a class="btn btn-ghost btn-sm" href="' + esc(c.external_url) + '" target="_blank" rel="noopener noreferrer">🔗 Original source</a>';
-      html += '</div>';
-    } else html += '<div class="empty">No content added yet.</div>';
-    box.innerHTML = html;
+    const files = Array.isArray(r.files) ? r.files.slice() : [];
+    if (c && c.file_path) { const s = await sb.storage.from('research-files').createSignedUrl(c.file_path, 3600); if (s.data && s.data.signedUrl) files.unshift({ name: 'Research paper (PDF)', url: s.data.signedUrl, size: 0 }); }
+    await libs;
+    box.innerHTML = HoloArticleView.html({ type: 'research', title: r.title, category: r.category, summary: r.summary, cover_url: r.cover_url, author: r.authors, date: r.created_at, read_min: r.read_min, blocks: c && c.blocks, legacy: c && c.body, files, toc: !(r.opts && r.opts.toc === false), external_url: c && c.external_url });
+    HoloArticleView.mount(box); related('researches', r);
   }
   (async function () { if (!key) return notFound(); try { await (type === 'research' ? research() : news()); } catch (e) { notFound(); } })();
 })();
