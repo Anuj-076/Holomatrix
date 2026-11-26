@@ -17,12 +17,13 @@
 
   const sub = (base, list) => list.map(x => ({ label: x[1], href: base + '/' + x[0] }));
   const JOBS = { label: 'Jobs', href: '/contact/jobs' };
+  const DONATE = { label: 'Donate', href: '/contribute/donate' };
   C.DEFAULT_NAV = [
     { id: 'news', label: 'News', href: '/news/all', visible: true, children: sub('/news', C.NEWS_CATS) },
     { id: 'research', label: 'Research', href: '/research/all', visible: true, children: sub('/research', C.RES_CATS) },
     { id: 'about', label: 'About', href: '/about/holomatrix', visible: true, children: [{ label: 'About Holomatrix', href: '/about/holomatrix' }, { label: 'Holomatrix Team', href: '/about/holomatrix-team' }] },
     { id: 'clients', label: 'Client', href: '/clients/become-a-client', visible: true, children: [{ label: 'Find a client', href: '/clients/find-a-client', perm: 'find_clients' }, { label: 'Become a client', href: '/clients/become-a-client' }] },
-    { id: 'funds', label: 'Contribute', href: '/contribute/donate', visible: true, children: [] },
+    { id: 'funds', label: 'Contribute', href: '/contribute/donate', visible: true, children: [DONATE] },
     { id: 'contact', label: 'Contact us', href: '/contact/ai-support', visible: true, children: [{ label: 'AI support', href: '/contact/ai-support' }, { label: 'Staff support', href: '/contact/staff-support' }, JOBS] }
   ];
   /* A menu saved earlier in Admin is upgraded on the fly: new names (Research, About, Contribute), /funds → /contribute addresses,
@@ -38,7 +39,7 @@
       delete o.premium;
       if (isSub(o.href)) o.href = '/contribute/donate';
       if (Array.isArray(i.children)) o.children = i.children.filter(k => !(k && isSub(k.href))).map(k => { if (!k) return k; const c = Object.assign({}, k, { href: fixHref(k.href) }); delete c.premium; return c; });
-      if (i.id === 'funds') { if (i.label === 'Funds') o.label = 'Contribute'; if ((o.children || []).length <= 1) o.children = []; }
+      if (i.id === 'funds') { if (i.label === 'Funds') o.label = 'Contribute'; if (!(o.children || []).length) o.children = [DONATE]; }
       if (i.id === 'research' && i.label === 'Researches') o.label = 'Research';
       if (i.id === 'about' && i.label === 'About us') o.label = 'About';
       if (i.id === 'contact' && !(o.children || []).some(k => k && /\/contact\/jobs/.test(k.href || ''))) o.children = (o.children || []).concat([JOBS]);
