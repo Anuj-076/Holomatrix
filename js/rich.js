@@ -1,5 +1,6 @@
 /* Holomatrix rich articles: safe text, page blocks → HTML, Contents box, reading time, LaTeX maths (KaTeX), symbol codes.
-   Block types: h (heading), p (text), img (image), q (quote), list, eq (equation), note (box), hr (divider). */
+   Block types: h (heading), p (text), img (image), q (quote), list, eq (equation), note (box), hr (divider).
+   Text-like blocks (p, q, list, eq, note) can also carry: bw (box width 40-100), bal (box position), sz (text size sm / lg / xl). */
 (function () {
   'use strict';
   if (window.HoloRich) return;
@@ -65,46 +66,77 @@
   }
   const readMin = blocks => Math.max(1, Math.ceil(plain(blocks).split(/\s+/).filter(Boolean).length / 200));
 
-  /* ---------- Blocks → HTML ---------- */
+  /* ---------- Box size / position / text size (shared by public page and editor) ---------- */
+  const BOX = { p: 1, q: 1, list: 1, eq: 1, note: 1 };
+  let cssIn = false;
+  function injectCss() {
+    if (cssIn) return; cssIn = true;
+    const s = document.createElement('style'); s.id = 'ar-bx-css';
+    s.textContent = '.ar-bx{width:var(--bw,100%)}.ar-bx.bx-center{margin-inline:auto}.ar-bx.bx-right{margin-left:auto}.bz-sm{font-size:.88em}.bz-lg{font-size:1.18em}.bz-xl{font-size:1.45em;line-height:1.6}';
+    document.head.appendChild(s);
+  }
+  function box(b, s) {
+    if (!s || !BOX[b.t]) return s;
+    const w = Math.round(+b.bw), narrow = w >= 40 && w < 100;
+    const sz = ['sm', 'lg', 'xl'].indexOf(b.sz) > -1 ? b.sz : '', pos = ['center', 'right'].indexOf(b.bal) > -1 ? b.bal : '';
+    if (!narrow && !sz) return s;
+    injectCss();
+    return '<div class="ar-bx' + (narrow && pos ? ' bx-' + pos : '') + (sz ? ' bz-' + sz : '') + '"' + (narrow ? ' style="--bw:' + w + '%"' : '') + '>' + s + '</div>';
+  }
+
+  /* ---------- One block → HTML ---------- */
+  function one(b, id) {
+    if (!b) return '';
+    const al = ['center', 'right', 'justify'].indexOf(b.al) > -1 ? ' al-' + b.al : '';
+    let s = '';
+    switch (b.t) {
+      case 'h': {
+        const x = String(b.x || '').trim(); if (!x) return '';
+        const l = +b.l === 3 ? 3 : 2;
+        return '<h' + l + ' class="ar-h" id="' + (id || 'sec-0') + '">' + esc(x) + '</h' + l + '>';
+      }
+      case 'p': s = '<p class="ar-p' + al + '">' + sanitize(b.x) + '</p>'; break;
+      case 'img': {
+        const u = imgUrl(b.u); if (!u) return '';
+        const w = Math.min(100, Math.max(20, +b.w || 100)), a = ['left', 'right'].indexOf(b.al) > -1 ? b.al : 'center';
+        return '<figure class="ar-fig fa-' + a + '" style="--w:' + w + '%"><img src="' + esc(u) + '" alt="' + esc(b.a || b.c || '') + '" loading="lazy">' + (b.c ? '<figcaption>' + esc(b.c) + '</figcaption>' : '') + '</figure>';
+      }
+      case 'q': {
+        if (!textOf(b.x).trim()) return '';
+        s = '<blockquote class="ar-q"><div class="ar-q-t">' + sanitize(b.x) + '</div>' + (b.by ? '<footer class="ar-q-by">— <cite>' + esc(b.by) + '</cite>' + (b.src ? '<span>' + esc(b.src) + '</span>' : '') + '</footer>' : '') + '</blockquote>';
+        break;
+      }
+      case 'list': {
+        const items = (b.i || []).filter(x => textOf(x).trim()); if (!items.length) return '';
+        const tag = b.o ? 'ol' : 'ul';
+        s = '<' + tag + ' class="ar-list">' + items.map(x => '<li>' + sanitize(x) + '</li>').join('') + '</' + tag + '>';
+        break;
+      }
+      case 'eq': {
+        if (!String(b.x || '').trim()) return '';
+        s = '<div class="ar-eq"><div class="ar-eq-m" data-tex="' + esc(b.x) + '"></div>' + (b.n ? '<span class="ar-eq-n">' + esc(b.n) + '</span>' : '') + '</div>';
+        break;
+      }
+      case 'note': {
+        const k = ['warn', 'tip'].indexOf(b.k) > -1 ? b.k : 'info';
+        s = '<aside class="ar-note k-' + k + '">' + (b.h ? '<b>' + esc(b.h) + '</b>' : '') + '<div>' + sanitize(b.x) + '</div></aside>';
+        break;
+      }
+      case 'hr': return '<hr class="ar-hr">';
+      default: return '';
+    }
+    return box(b, s);
+  }
+
+  /* ---------- Blocks → HTML (parts[i] belongs to blocks[i]) ---------- */
   function render(blocks) {
     const toc = []; let n = 0;
-    const html = (Array.isArray(blocks) ? blocks : []).map(b => {
-      if (!b) return '';
-      const al = ['center', 'right', 'justify'].indexOf(b.al) > -1 ? ' al-' + b.al : '';
-      switch (b.t) {
-        case 'h': {
-          const x = String(b.x || '').trim(); if (!x) return '';
-          const l = +b.l === 3 ? 3 : 2, id = 'sec-' + (++n); toc.push({ id, l, x });
-          return '<h' + l + ' class="ar-h" id="' + id + '">' + esc(x) + '</h' + l + '>';
-        }
-        case 'p': return '<p class="ar-p' + al + '">' + sanitize(b.x) + '</p>';
-        case 'img': {
-          const u = imgUrl(b.u); if (!u) return '';
-          const w = Math.min(100, Math.max(20, +b.w || 100)), a = ['left', 'right'].indexOf(b.al) > -1 ? b.al : 'center';
-          return '<figure class="ar-fig fa-' + a + '" style="--w:' + w + '%"><img src="' + esc(u) + '" alt="' + esc(b.a || b.c || '') + '" loading="lazy">' + (b.c ? '<figcaption>' + esc(b.c) + '</figcaption>' : '') + '</figure>';
-        }
-        case 'q': {
-          if (!textOf(b.x).trim()) return '';
-          return '<blockquote class="ar-q"><div class="ar-q-t">' + sanitize(b.x) + '</div>' + (b.by ? '<footer class="ar-q-by">— <cite>' + esc(b.by) + '</cite>' + (b.src ? '<span>' + esc(b.src) + '</span>' : '') + '</footer>' : '') + '</blockquote>';
-        }
-        case 'list': {
-          const items = (b.i || []).filter(x => textOf(x).trim()); if (!items.length) return '';
-          const tag = b.o ? 'ol' : 'ul';
-          return '<' + tag + ' class="ar-list">' + items.map(x => '<li>' + sanitize(x) + '</li>').join('') + '</' + tag + '>';
-        }
-        case 'eq': {
-          if (!String(b.x || '').trim()) return '';
-          return '<div class="ar-eq"><div class="ar-eq-m" data-tex="' + esc(b.x) + '"></div>' + (b.n ? '<span class="ar-eq-n">' + esc(b.n) + '</span>' : '') + '</div>';
-        }
-        case 'note': {
-          const k = ['warn', 'tip'].indexOf(b.k) > -1 ? b.k : 'info';
-          return '<aside class="ar-note k-' + k + '">' + (b.h ? '<b>' + esc(b.h) + '</b>' : '') + '<div>' + sanitize(b.x) + '</div></aside>';
-        }
-        case 'hr': return '<hr class="ar-hr">';
-      }
-      return '';
-    }).join('');
-    return { html, toc, tocHtml: tocHtml(toc) };
+    const parts = (Array.isArray(blocks) ? blocks : []).map(b => {
+      let id = '';
+      if (b && b.t === 'h' && String(b.x || '').trim()) { id = 'sec-' + (++n); toc.push({ id, l: +b.l === 3 ? 3 : 2, x: String(b.x).trim() }); }
+      return one(b, id);
+    });
+    return { html: parts.join(''), parts, toc, tocHtml: tocHtml(toc) };
   }
   function tocHtml(toc) {
     if (!toc || toc.length < 3) return '';
@@ -134,14 +166,18 @@
     while (w.nextNode()) if (w.currentNode.nodeValue.indexOf(from) > -1) list.push(w.currentNode);
     list.forEach(n => { n.nodeValue = n.nodeValue.split(from).join(to); });
   }
-  function math(root) {
+  /* math(root) draws $…$ and equation blocks. math(root, { tex: true }) draws ONLY the equation blocks (used while typing on the page) */
+  function math(root, o) {
     root = root || document.body;
-    if (!(root.querySelector('[data-tex]') || /\$|\\\(|\\\[/.test(root.textContent || ''))) return Promise.resolve();
+    const texOnly = !!(o && o.tex);
+    if (!(root.querySelector('[data-tex]') || (!texOnly && /\$|\\\(|\\\[/.test(root.textContent || '')))) return Promise.resolve();
     return katexReady().then(() => {
-      swap(root, '\\$', ESC);                                   // \$ stays a normal dollar sign
+      if (!texOnly) swap(root, '\\$', ESC);                      // \$ stays a normal dollar sign
       root.querySelectorAll('[data-tex]').forEach(el => { try { window.katex.render(el.getAttribute('data-tex'), el, { displayMode: el.getAttribute('data-mode') !== 'inline', throwOnError: false }); } catch (e) {} });
-      window.renderMathInElement(root, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '\\[', right: '\\]', display: true }, { left: '$', right: '$', display: false }, { left: '\\(', right: '\\)', display: false }], throwOnError: false });
-      swap(root, ESC, '$');
+      if (!texOnly) {
+        window.renderMathInElement(root, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '\\[', right: '\\]', display: true }, { left: '$', right: '$', display: false }, { left: '\\(', right: '\\)', display: false }], throwOnError: false });
+        swap(root, ESC, '$');
+      }
     }).catch(() => {});
   }
 
@@ -190,5 +226,5 @@
     return d;
   }
 
-  window.HoloRich = { esc, sanitize, textOf, plain, readMin, render, tocHtml, math, mount: math, symbols: SYM, helpHtml, symbolsHtml, symbolsWire, symbolsDialog };
+  window.HoloRich = { esc, sanitize, textOf, plain, readMin, render, renderBlock: one, tocHtml, math, mount: math, symbols: SYM, helpHtml, symbolsHtml, symbolsWire, symbolsDialog };
 })();
