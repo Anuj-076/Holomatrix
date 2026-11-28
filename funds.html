@@ -19,6 +19,8 @@
     .don-pt:hover { transform: translateY(-3px); border-color: var(--ul, var(--accent)); }
     .don-pt i { font-style: normal; font-size: 1.3rem; width: 42px; height: 42px; flex: none; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, var(--ul, var(--accent)) 16%, transparent); }
     .don-pt span:empty { display: none; }
+    .don-ways { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    .don-safe { color: var(--muted); font-size: .88rem; max-width: 640px; line-height: 1.6; }
   </style>
 </head>
 <body>
@@ -35,10 +37,12 @@
         <div class="don-pt"><i>📰</i><span data-t="funds.donate.w1">Keeps our news free to read</span></div>
         <div class="don-pt"><i>🖥️</i><span data-t="funds.donate.w2">Covers the tools and servers behind this site</span></div>
       </div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="btn btn-primary" data-pay="intl"><span data-t="funds.donate.intl">Donate internationally</span></button>
-        <button class="btn btn-ghost" data-pay="upi"><span data-t="funds.donate.upi">Donate with UPI (India)</span></button>
+      <div class="don-ways">
+        <a class="btn btn-primary" href="#" data-pay data-link="donate.razorpay" data-label="Donate: Razorpay link (UPI, cards, netbanking)" target="_blank" rel="noopener noreferrer"><span data-t="funds.donate.rzp">UPI / Card / Netbanking (India)</span></a>
+        <a class="btn btn-ghost" href="#" data-pay data-link="donate.paypal" data-label="Donate: PayPal link (international)" target="_blank" rel="noopener noreferrer"><span data-t="funds.donate.pp">PayPal (international)</span></a>
+        <a class="btn btn-ghost" href="#" data-pay data-link="donate.wise" data-label="Donate: Wise link (bank transfer)" target="_blank" rel="noopener noreferrer"><span data-t="funds.donate.wise">Wise (bank transfer)</span></a>
       </div>
+      <p class="don-safe" data-t="funds.donate.safe" data-multiline>Each button opens the payment provider's own secure page in a new tab. Holomatrix never sees or stores your card or bank details.</p>
     </section>
   </div></main>
   <div id="site-footer"></div>
