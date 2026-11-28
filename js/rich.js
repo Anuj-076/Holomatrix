@@ -1,5 +1,5 @@
 /* Holomatrix rich articles: safe text, page blocks → HTML, Contents box, reading time, LaTeX maths (KaTeX), symbol codes.
-   Block types: h (heading), p (text), img (image), q (quote), list, eq (equation), note (box), hr (divider).
+   Block types: h (heading), p (text), img (image), vid (video), q (quote), list, tbl (table), eq (equation), note (box), hr (divider).
    Text-like blocks (p, q, list, eq, note) can also carry: bw (box width 40-100), bal (box position), sz (text size sm / lg / xl). */
 (function () {
   'use strict';
@@ -60,19 +60,35 @@
       if (b.t === 'p' || b.t === 'note') return textOf(b.x);
       if (b.t === 'q') return textOf(b.x) + (b.by ? ' — ' + b.by : '');
       if (b.t === 'list') return (b.i || []).map(textOf).join('\n');
-      if (b.t === 'img') return String(b.c || '');
+      if (b.t === 'tbl') return (b.rows || []).map(r => (r || []).map(textOf).join(' ')).join('\n');
+      if (b.t === 'img' || b.t === 'vid') return String(b.c || '');
       return '';
     }).filter(Boolean).join('\n\n');
   }
   const readMin = blocks => Math.max(1, Math.ceil(plain(blocks).split(/\s+/).filter(Boolean).length / 200));
 
-  /* ---------- Box size / position / text size (shared by public page and editor) ---------- */
+  /* ---------- Video links: YouTube and Vimeo only ---------- */
+  const vidId = u => {
+    u = String(u || '').trim(); let m;
+    if ((m = u.match(/^https?:\/\/(?:www\.|m\.)?(?:youtube|youtube-nocookie)\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/|live\/)([\w-]{11})/i)) || (m = u.match(/^https?:\/\/youtu\.be\/([\w-]{11})/i))) return { k: 'yt', id: m[1] };
+    if ((m = u.match(/^https?:\/\/(?:www\.|player\.)?vimeo\.com\/(?:video\/)?(\d{6,12})/i))) return { k: 'vi', id: m[1] };
+    return null;
+  };
+
+  /* ---------- Box size / position / text size, tables, videos (styles are added once) ---------- */
   const BOX = { p: 1, q: 1, list: 1, eq: 1, note: 1 };
   let cssIn = false;
   function injectCss() {
     if (cssIn) return; cssIn = true;
     const s = document.createElement('style'); s.id = 'ar-bx-css';
-    s.textContent = '.ar-bx{width:var(--bw,100%)}.ar-bx.bx-center{margin-inline:auto}.ar-bx.bx-right{margin-left:auto}.bz-sm{font-size:.88em}.bz-lg{font-size:1.18em}.bz-xl{font-size:1.45em;line-height:1.6}';
+    s.textContent = [
+      '.ar-bx{width:var(--bw,100%)}.ar-bx.bx-center{margin-inline:auto}.ar-bx.bx-right{margin-left:auto}.bz-sm{font-size:.88em}.bz-lg{font-size:1.18em}.bz-xl{font-size:1.45em;line-height:1.6}',
+      '.ar-vid-f{position:relative;aspect-ratio:16/9;border-radius:18px;overflow:hidden;border:1px solid var(--border);background:#000}.ar-vid-f iframe{position:absolute;inset:0;width:100%;height:100%;border:0}',
+      '.ar-tblw{margin:28px 0}.ar-tbl-s{overflow-x:auto;border:1px solid var(--border);border-radius:16px}.ar-tbl{width:100%;border-collapse:collapse;font-size:.95em;line-height:1.5}',
+      '.ar-tbl th,.ar-tbl td{padding:11px 14px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);text-align:left;vertical-align:top}',
+      '.ar-tbl th{background:color-mix(in srgb,var(--ul,var(--accent)) 14%,var(--surface));font-family:var(--font-head);font-weight:700}',
+      '.ar-tbl tr:last-child td{border-bottom:0}.ar-tbl th:last-child,.ar-tbl td:last-child{border-right:0}.ar-tblw figcaption{margin-top:10px;color:var(--muted);font-size:.9rem;text-align:center}'
+    ].join('');
     document.head.appendChild(s);
   }
   function box(b, s) {
@@ -100,6 +116,20 @@
         const u = imgUrl(b.u); if (!u) return '';
         const w = Math.min(100, Math.max(20, +b.w || 100)), a = ['left', 'right'].indexOf(b.al) > -1 ? b.al : 'center';
         return '<figure class="ar-fig fa-' + a + '" style="--w:' + w + '%"><img src="' + esc(u) + '" alt="' + esc(b.a || b.c || '') + '" loading="lazy">' + (b.c ? '<figcaption>' + esc(b.c) + '</figcaption>' : '') + '</figure>';
+      }
+      case 'vid': {
+        const v = vidId(b.u); if (!v) return '';
+        injectCss();
+        const src = v.k === 'yt' ? 'https://www.youtube-nocookie.com/embed/' + v.id : 'https://player.vimeo.com/video/' + v.id + '?dnt=1';
+        const w = Math.min(100, Math.max(20, +b.w || 100)), a = ['left', 'right'].indexOf(b.al) > -1 ? b.al : 'center';
+        return '<figure class="ar-fig ar-vid fa-' + a + '" style="--w:' + w + '%"><div class="ar-vid-f"><iframe src="' + src + '" title="' + esc(b.c || 'Video') + '" loading="lazy" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>' + (b.c ? '<figcaption>' + esc(b.c) + '</figcaption>' : '') + '</figure>';
+      }
+      case 'tbl': {
+        const rows = (Array.isArray(b.rows) ? b.rows : []).filter(r => Array.isArray(r) && r.length); if (!rows.length) return '';
+        const n = Math.max.apply(null, rows.map(r => r.length)), head = b.head !== false;
+        const tr = (r, tag) => '<tr>' + Array.from({ length: n }, (_, k) => '<' + tag + '>' + sanitize(r[k]) + '</' + tag + '>').join('') + '</tr>';
+        injectCss();
+        return '<figure class="ar-tblw"><div class="ar-tbl-s"><table class="ar-tbl">' + (head ? '<thead>' + tr(rows[0], 'th') + '</thead>' : '') + '<tbody>' + rows.slice(head ? 1 : 0).map(r => tr(r, 'td')).join('') + '</tbody></table></div>' + (b.c ? '<figcaption>' + esc(b.c) + '</figcaption>' : '') + '</figure>';
       }
       case 'q': {
         if (!textOf(b.x).trim()) return '';
@@ -226,5 +256,5 @@
     return d;
   }
 
-  window.HoloRich = { esc, sanitize, textOf, plain, readMin, render, renderBlock: one, tocHtml, math, mount: math, symbols: SYM, helpHtml, symbolsHtml, symbolsWire, symbolsDialog };
+  window.HoloRich = { esc, sanitize, textOf, plain, readMin, render, renderBlock: one, videoId: vidId, tocHtml, math, mount: math, symbols: SYM, helpHtml, symbolsHtml, symbolsWire, symbolsDialog };
 })();
