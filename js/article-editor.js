@@ -5,16 +5,18 @@
   'use strict';
   if (window.HoloArticleEditor) return;
   const esc = UI.esc, clone = x => JSON.parse(JSON.stringify(x)), Z = '\u200b', unz = s => String(s).replace(/\u200b/g, '');
-  const TYPES = { h: ['🔠', 'Heading'], p: ['¶', 'Text'], img: ['🖼️', 'Image'], q: ['❝', 'Quote'], list: ['☰', 'List'], eq: ['∑', 'Equation'], note: ['💡', 'Note box'], hr: ['➖', 'Divider line'] };
+  const TYPES = { h: ['🔠', 'Heading'], p: ['¶', 'Text'], img: ['🖼️', 'Image'], vid: ['▶️', 'Video'], q: ['❝', 'Quote'], list: ['☰', 'List'], tbl: ['▦', 'Table'], eq: ['∑', 'Equation'], note: ['💡', 'Note box'], hr: ['➖', 'Divider line'] };
   const NEW = {
     h: () => ({ t: 'h', l: 2, x: '' }), p: () => ({ t: 'p', x: '', al: 'left' }), img: () => ({ t: 'img', u: '', c: '', a: '', w: 100, al: 'center' }),
-    q: () => ({ t: 'q', x: '', by: '', src: '' }), list: () => ({ t: 'list', o: false, i: [''] }), eq: () => ({ t: 'eq', x: '', n: '' }),
-    note: () => ({ t: 'note', k: 'info', h: '', x: '' }), hr: () => ({ t: 'hr' })
+    vid: () => ({ t: 'vid', u: '', c: '', w: 100, al: 'center' }), q: () => ({ t: 'q', x: '', by: '', src: '' }), list: () => ({ t: 'list', o: false, i: [''] }),
+    tbl: () => ({ t: 'tbl', head: true, c: '', rows: [['', ''], ['', '']] }), eq: () => ({ t: 'eq', x: '', n: '' }), note: () => ({ t: 'note', k: 'info', h: '', x: '' }), hr: () => ({ t: 'hr' })
   };
   const SZ = '.fs-sm,.fs-lg,.fs-xl';
   const FC = ['#4de1ff', '#4169e1', '#ffffff', '#ef4444', '#f97316', '#facc15', '#22c55e', '#ec4899', '#8b5cf6', '#000000'];
   const HLC = ['#ffe066', '#67e8f9', '#86efac', '#f9a8d4', '#fdba74', '#c4b5fd'];
-  const PH = { x: 'Type your text…', h: 'Heading', by: 'Name', li: 'List item', c: 'Caption (optional)', title: 'Title', summary: 'Short summary (optional)' };
+  const PH = { x: 'Type your text…', h: 'Heading', by: 'Name', li: 'List item', c: 'Caption (optional)', cell: 'Type…', title: 'Title', summary: 'Short summary (optional)' };
+  const PH_IMG = '<figure class="ar-fig fa-center"><div class="ve-ph" data-vc="pic">🖼️ Click to add a picture</div></figure>';
+  const PH_VID = '<figure class="ar-fig fa-center"><div class="ve-ph" data-vc="vlink">▶️ Click to add a video link</div></figure>';
   const fsize = n => !n ? '' : n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
   const need = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.body.appendChild(s); });
   const fromBody = body => { const t = String(body || '').trim(); return t ? t.split(/\n{2,}/).filter(Boolean).map(s => ({ t: 'p', x: esc(s).replace(/\n/g, '<br>'), al: 'left' })) : [{ t: 'p', x: '', al: 'left' }]; };
@@ -30,6 +32,7 @@
     '.ae-bub button.on{background:var(--accent-grad);color:var(--on-accent);border-color:transparent}.ae-bub i.sep{width:1px;height:22px;background:var(--border);margin:0 2px}',
     '.ae-bub .sw{min-width:24px;width:24px;height:24px;padding:0;border-radius:50%}.ae-pick{position:fixed;left:-100px;top:0;width:1px;height:1px;opacity:0;pointer-events:none}',
     '.ae-hint{font-size:.82rem;color:var(--muted);margin:-4px 0 12px}.ae-opt{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ae-opt input[type=range]{vertical-align:middle;margin-left:6px;width:130px}',
+    '.ae-tbl-s{overflow-x:auto}.ae-tbl{border-collapse:collapse;width:100%}.ae-tbl td{border:1px solid var(--border);padding:3px;min-width:130px;vertical-align:top}.ae-tbl .ae-rt{min-height:2.2em;border:0;padding:6px 8px;background:transparent}',
     '.ve-mode{position:sticky;top:0;z-index:6;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;margin-bottom:16px;border:1px solid var(--border);border-radius:14px;background:var(--bg-2)}',
     '.ve-mode button{padding:8px 14px;border-radius:999px;border:1px solid var(--border);font-weight:600;font-size:.85rem}.ve-mode button.on{background:var(--accent-grad);color:var(--on-accent);border-color:transparent}.ve-mode span{font-size:.82rem;color:var(--muted)}',
     '.ve-b{position:relative}.ve-edit .ve-b:hover{outline:1px dashed color-mix(in srgb,var(--accent) 70%,transparent);outline-offset:6px;border-radius:6px}',
@@ -51,8 +54,14 @@
     if (b.t === 'h') return s(b.x) ? { t: 'h', l: +b.l === 3 ? 3 : 2, x: s(b.x) } : null;
     if (b.t === 'p') return has(b.x) ? bx({ t: 'p', x: R.sanitize(b.x), al: ['center', 'right', 'justify'].indexOf(b.al) > -1 ? b.al : 'left' }) : null;
     if (b.t === 'img') return b.u ? { t: 'img', u: b.u, c: s(b.c), a: s(b.a), w: Math.min(100, Math.max(20, +b.w || 100)), al: ['left', 'right'].indexOf(b.al) > -1 ? b.al : 'center' } : null;
+    if (b.t === 'vid') return R.videoId(b.u) ? { t: 'vid', u: s(b.u), c: s(b.c), w: Math.min(100, Math.max(20, +b.w || 100)), al: ['left', 'right'].indexOf(b.al) > -1 ? b.al : 'center' } : null;
     if (b.t === 'q') return has(b.x) ? bx({ t: 'q', x: R.sanitize(b.x), by: s(b.by), src: s(b.src) }) : null;
     if (b.t === 'list') { const i = (b.i || []).map(x => R.sanitize(x)).filter(x => has(x)); return i.length ? bx({ t: 'list', o: !!b.o, i }) : null; }
+    if (b.t === 'tbl') {
+      const rows = (b.rows || []).map(r => (r || []).map(x => R.sanitize(x))), n = Math.max.apply(null, [0].concat(rows.map(r => r.length)));
+      if (!n || !rows.some(r => r.some(x => has(x)))) return null;
+      return { t: 'tbl', head: b.head !== false, c: s(b.c), rows: rows.map(r => { const o = r.slice(); while (o.length < n) o.push(''); return o; }) };
+    }
     if (b.t === 'eq') return s(b.x) ? bx({ t: 'eq', x: s(b.x), n: s(b.n) }) : null;
     if (b.t === 'note') return (has(b.x) || s(b.h)) ? bx({ t: 'note', k: ['warn', 'tip'].indexOf(b.k) > -1 ? b.k : 'info', h: s(b.h), x: R.sanitize(b.x) }) : null;
     if (b.t === 'hr') return { t: 'hr' };
@@ -90,8 +99,13 @@
       if (await UI.confirm('Restore your unsaved draft?', 'We found unsaved work on this ' + (isR ? 'research' : 'article') + ' from ' + new Date(dr.at).toLocaleString() + '.', { confirmText: 'Restore draft', cancelText: 'Start fresh' })) { p = Object.assign(p, dr.p); blocks = dr.blocks; }
       else { try { localStorage.removeItem(key); } catch (e) {} }
     }
+    blocks.forEach(b => {                                          /* every table row gets the same number of cells */
+      if (b.t !== 'tbl') return;
+      const rows = b.rows && b.rows.length ? b.rows : [['']], n = Math.max.apply(null, rows.map(r => (r || []).length).concat([1]));
+      b.rows = rows.map(r => Array.from({ length: n }, (_, k) => (r || [])[k] || ''));
+    });
 
-    let dirty = false, active = -1, lastRange = null, lastRt = null, lastField = null, tab = 'edit', pmode = false, busy = false, pickerOpen = false, drag = false, picking = '', pop = '', raf = 0;
+    let dirty = false, active = -1, lastRange = null, lastRt = null, lastField = null, lastCell = null, tab = 'edit', pmode = false, busy = false, pickerOpen = false, drag = false, picking = '', pop = '', raf = 0;
     const mark = () => { dirty = true; };
 
     /* ---------- Shell ---------- */
@@ -131,15 +145,19 @@
     const sel = (f, cur, opts, num) => '<select class="input" style="width:auto;max-width:100%" data-f="' + f + '"' + (num ? ' data-num="1"' : '') + '>' + opts.map(x => opt(x[0], cur, x[1])).join('') + '</select>';
     const bx = (b, extra) => '<div class="ae-opt">' + (extra || '') + sel('sz', b.sz || '', [['', 'Normal size'], ['sm', 'Small text'], ['lg', 'Large text'], ['xl', 'Huge text']]) + sel('bal', b.bal || 'left', [['left', 'Box left'], ['center', 'Box centre'], ['right', 'Box right']]) +
       '<label style="font-size:.8rem;color:var(--muted)">Box width <b>' + (b.bw || 100) + '%</b><input type="range" min="40" max="100" data-f="bw" data-num="1" value="' + (b.bw || 100) + '"></label></div>';
+    const wp = b => '<div class="two"><div class="field"><label>Width <b>' + (b.w || 100) + '%</b></label><input type="range" min="20" max="100" data-f="w" data-num="1" value="' + (b.w || 100) + '"></div><div class="field"><label>Position</label>' + sel('al', b.al || 'center', [['left', 'Left'], ['center', 'Centre'], ['right', 'Right']]) + '</div></div>';
     function blockHtml(b, i) {
       let c = '';
       if (b.t === 'h') c = sel('l', b.l === 3 ? 3 : 2, [[2, 'Big heading'], [3, 'Small heading']], true) + '<input class="input" data-f="x" maxlength="200" placeholder="Heading text" value="' + esc(b.x) + '">';
       else if (b.t === 'p') c = rt(b.x, 'data-f="x"', 'Write your text here… select words to style them. Use $…$ for maths.') + bx(b, sel('al', b.al || 'left', [['left', 'Align left'], ['center', 'Centre'], ['right', 'Align right'], ['justify', 'Justify']]));
       else if (b.t === 'img') c = '<div class="ae-img">' + (b.u ? '<img src="' + esc(b.u) + '" alt="">' : '<div class="ae-ph">No picture yet</div>') + '<div style="display:flex;gap:6px"><button type="button" class="ib" data-imgup>📷 ' + (b.u ? 'Replace' : 'Upload') + '</button><button type="button" class="ib" data-imgrm>✕</button></div></div>' +
-        '<input class="input" data-f="c" maxlength="300" placeholder="Caption (optional)" value="' + esc(b.c) + '"><input class="input" data-f="a" maxlength="200" placeholder="Describe the picture for screen readers (optional)" value="' + esc(b.a) + '">' +
-        '<div class="two"><div class="field"><label>Width <b>' + (b.w || 100) + '%</b></label><input type="range" min="20" max="100" data-f="w" data-num="1" value="' + (b.w || 100) + '"></div><div class="field"><label>Position</label>' + sel('al', b.al || 'center', [['left', 'Left'], ['center', 'Centre'], ['right', 'Right']]) + '</div></div>';
+        '<input class="input" data-f="c" maxlength="300" placeholder="Caption (optional)" value="' + esc(b.c) + '"><input class="input" data-f="a" maxlength="200" placeholder="Describe the picture for screen readers (optional)" value="' + esc(b.a) + '">' + wp(b);
+      else if (b.t === 'vid') { const v = R.videoId(b.u); c = '<input class="input" data-f="u" placeholder="Paste a YouTube or Vimeo link" value="' + esc(b.u) + '"><div class="hint" style="margin:0">' + (!b.u ? 'Example: https://www.youtube.com/watch?v=…' : v ? '✓ ' + (v.k === 'yt' ? 'YouTube' : 'Vimeo') + ' video recognised' : '⚠️ This link is not recognised') + '</div><input class="input" data-f="c" maxlength="300" placeholder="Caption (optional)" value="' + esc(b.c) + '">' + wp(b); }
       else if (b.t === 'q') c = rt(b.x, 'data-f="x"', 'Type the quote…') + '<div class="two"><input class="input" data-f="by" maxlength="120" placeholder="Name (shown as — Name)" value="' + esc(b.by) + '"><input class="input" data-f="src" maxlength="160" placeholder="Role or source (optional)" value="' + esc(b.src) + '"></div>' + bx(b);
       else if (b.t === 'list') c = sel('o', b.o ? 'ol' : 'ul', [['ul', 'Bullet points'], ['ol', 'Numbered']]) + (b.i || ['']).map((x, k) => '<div class="ae-li"><span>' + (b.o ? (k + 1) + '.' : '•') + '</span>' + rt(x, 'data-li="' + k + '"', 'List item') + '<button type="button" class="ib" data-rmli="' + k + '">✕</button></div>').join('') + '<div><button type="button" class="ib" data-addli>＋ Add item</button></div>' + bx(b);
+      else if (b.t === 'tbl') c = '<div class="ae-tbl-s"><table class="ae-tbl">' + b.rows.map((r, ri) => '<tr>' + r.map((x, ci) => '<td>' + rt(x, 'data-cell="' + ri + ':' + ci + '"', ri === 0 && b.head !== false ? 'Header' : 'Cell') + '</td>').join('') + '</tr>').join('') + '</table></div>' +
+        '<div class="ae-opt"><button type="button" class="ib" data-tb="ar">＋ Row</button><button type="button" class="ib" data-tb="ac">＋ Column</button><button type="button" class="ib" data-tb="dr">− Row</button><button type="button" class="ib" data-tb="dc">− Column</button><label class="chk" style="margin:0"><input type="checkbox" data-f="head"' + (b.head !== false ? ' checked' : '') + '> First row is a header</label></div>' +
+        '<div class="hint" style="margin:0">Click a cell first: the ＋ and − buttons then work on that cell\'s row or column.</div><input class="input" data-f="c" maxlength="300" placeholder="Caption (optional)" value="' + esc(b.c) + '">';
       else if (b.t === 'eq') c = '<textarea class="input ae-code" data-f="x" placeholder="LaTeX code, e.g.  E = mc^{2}   (open Symbol codes for help)">' + esc(b.x) + '</textarea><div class="ae-eqp">Preview appears here</div><input class="input" data-f="n" maxlength="20" placeholder="Label on the right, e.g. (1) (optional)" value="' + esc(b.n) + '">' + bx(b);
       else if (b.t === 'note') c = sel('k', b.k || 'info', [['info', '💡 Info (cyan)'], ['tip', '✅ Tip (green)'], ['warn', '⚠️ Warning (orange)']]) + '<input class="input" data-f="h" maxlength="120" placeholder="Title (optional)" value="' + esc(b.h) + '">' + rt(b.x, 'data-f="x"', 'Write the note…') + bx(b);
       else if (b.t === 'hr') c = '<div class="ae-hr">A divider line is shown here.</div>';
@@ -155,6 +173,14 @@
       box.querySelectorAll('.ae-b[data-t="eq"]').forEach(bl => eqPreview(bl, blocks[+bl.dataset.i].x));
     }
     const redraw = () => { if (tab === 'prev') drawPage(); else drawBlocks(); };
+    function tableOp(b, op, i) {
+      const cur = lastCell && lastCell.i === i ? lastCell : null, cols = b.rows[0].length;
+      if (op === 'ar') b.rows.splice(cur ? cur.r + 1 : b.rows.length, 0, Array(cols).fill(''));
+      else if (op === 'ac') b.rows.forEach(r => r.splice(cur ? cur.c + 1 : cols, 0, ''));
+      else if (op === 'dr') { if (b.rows.length > 1) b.rows.splice(cur ? cur.r : b.rows.length - 1, 1); }
+      else if (op === 'dc') { if (cols > 1) b.rows.forEach(r => r.splice(cur ? cur.c : cols - 1, 1)); }
+      lastCell = null; mark(); redraw();
+    }
     const focusBlock = i => { const el = box.querySelector('.ae-b[data-i="' + i + '"] .ae-rt, .ae-b[data-i="' + i + '"] input.input, .ae-b[data-i="' + i + '"] textarea'); if (el) el.focus(); };
     function focusPage(i, k) {
       const w = prevEl.querySelector('.ve-b[data-i="' + i + '"]'); if (!w) return;
@@ -171,8 +197,9 @@
       const bl = el.closest('.ae-b'); if (!bl) return;
       const b = blocks[+bl.dataset.i]; if (!b) return;
       if (el.dataset.li !== undefined) b.i[+el.dataset.li] = el.innerHTML;
+      else if (el.dataset.cell) { const rc = el.dataset.cell.split(':'); b.rows[+rc[0]][+rc[1]] = el.innerHTML; }
       else if (el.dataset.f) {
-        const f = el.dataset.f; let v = el.isContentEditable ? el.innerHTML : el.value;
+        const f = el.dataset.f; let v = el.type === 'checkbox' ? el.checked : el.isContentEditable ? el.innerHTML : el.value;
         if (el.dataset.num) v = +v; if (f === 'o') v = v === 'ol'; b[f] = v;
         if (b.t === 'eq' && f === 'x') eqPreview(bl, v);
         if (el.type === 'range') { const lb = el.parentElement.querySelector('b'); if (lb) lb.textContent = v + '%'; }
@@ -182,10 +209,11 @@
     const atEnd = el => { const s = getSelection(); if (!s.rangeCount) return false; const r = s.getRangeAt(0).cloneRange(); r.selectNodeContents(el); r.setStart(s.focusNode, s.focusOffset); return r.toString() === ''; };
 
     box.addEventListener('input', e => field(e.target));
-    box.addEventListener('change', e => { const el = e.target; if (el.tagName === 'SELECT') { field(el); if (el.dataset.f === 'o') drawBlocks(); } });
+    box.addEventListener('change', e => { const el = e.target; if (el.tagName === 'SELECT') field(el); if ((el.tagName === 'SELECT' && el.dataset.f === 'o') || el.dataset.f === 'u') drawBlocks(); });
     box.addEventListener('focusin', e => {
       const b = e.target.closest('.ae-b'); if (!b) return;
       active = +b.dataset.i; lastField = e.target;
+      if (e.target.dataset && e.target.dataset.cell) { const rc = e.target.dataset.cell.split(':'); lastCell = { i: active, r: +rc[0], c: +rc[1] }; }
       box.querySelectorAll('.ae-b.on').forEach(x => x.classList.remove('on')); b.classList.add('on');
     });
     box.addEventListener('paste', e => {
@@ -210,6 +238,7 @@
       if (q('[data-mv]')) { const j = i + +q('[data-mv]').dataset.mv; if (blocks[j]) { [blocks[i], blocks[j]] = [blocks[j], blocks[i]]; active = j; mark(); drawBlocks(); } }
       else if (q('[data-dup]')) { blocks.splice(i + 1, 0, clone(blk)); active = i + 1; mark(); drawBlocks(); }
       else if (q('[data-del]')) { blocks.splice(i, 1); active = -1; mark(); drawBlocks(); }
+      else if (q('[data-tb]')) tableOp(blk, q('[data-tb]').dataset.tb, i);
       else if (q('[data-addli]')) { blk.i.push(''); mark(); drawBlocks(); const n = box.querySelector('.ae-b[data-i="' + i + '"] .ae-rt[data-li="' + (blk.i.length - 1) + '"]'); if (n) n.focus(); }
       else if (q('[data-rmli]')) { blk.i.splice(+q('[data-rmli]').dataset.rmli, 1); if (!blk.i.length) blk.i.push(''); mark(); drawBlocks(); }
       else if (q('[data-imgup]')) pick(IMG, false, async fs => { const u = await upImg(fs[0]); if (u) { blk.u = u; mark(); drawBlocks(); } });
@@ -256,7 +285,7 @@
       const el = restore(); if (!el) return;
       document.execCommand('styleWithCSS', false, true); document.execCommand(cmd, false, val === undefined ? null : val); done(el);
     }
-    /* takes the selected words out of any <sel> that wraps them, and removes <sel> inside them */
+    /* takes the selected words out of any <selector> that wraps them, and removes <selector> inside them */
     function peel(el, selector) {
       const s = getSelection(); let r = s.getRangeAt(0), removed = false;
       const n0 = r.commonAncestorContainer, anc = (n0.nodeType === 3 ? n0.parentElement : n0).closest(selector);
@@ -335,17 +364,19 @@
       else if (g.t === 'q') { if (blank(g.x)) g.x = Z; g.by = g.by || Z; }
       else if (g.t === 'note') { if (blank(g.x)) g.x = Z; g.h = g.h || Z; }
       else if (g.t === 'list') g.i = (g.i && g.i.length ? g.i : ['']).map(x => blank(x) ? Z : x);
+      else if (g.t === 'tbl') g.rows = (g.rows && g.rows.length ? g.rows : [['']]).map(r => r.map(x => blank(x) ? Z : x));
       else if (g.t === 'eq') { if (!String(g.x || '').trim()) g.x = '\\text{Click Edit code to write an equation}'; }
       else if (g.t === 'img') g.c = g.c || Z;
       return g;
     }
-    const part = i => { const b = blocks[i], h = R.render([ghost(b)]).parts[0]; return h || (b.t === 'img' ? '<figure class="ar-fig fa-center"><div class="ve-ph" data-vc="pic">🖼️ Click to add a picture</div></figure>' : ''); };
+    const part = i => { const b = blocks[i], h = R.render([ghost(b)]).parts[0]; return h || (b.t === 'img' ? PH_IMG : b.t === 'vid' ? PH_VID : ''); };
     function ctl(b, i) {
       const bt = (a, t, tip, on) => '<button type="button" data-vc="' + a + '"' + (on ? ' class="on"' : '') + ' title="' + tip + '">' + t + '</button>', sep = '<i class="sep"></i>';
       const pos = cur => bt('pos-left', '⬅', 'Left', cur === 'left') + bt('pos-center', '⬌', 'Centre', cur === 'center') + bt('pos-right', '➡', 'Right', cur === 'right');
       let s = bt('up', '↑', 'Move up') + bt('down', '↓', 'Move down') + bt('dup', '⧉', 'Duplicate') + bt('del', '✕', 'Delete');
-      if (b.t === 'img') s += sep + bt('pic', '📷', 'Replace picture') + '<input type="range" min="20" max="100" data-vw="w" value="' + (b.w || 100) + '" title="Picture width">' + pos(b.al || 'center');
+      if (b.t === 'img' || b.t === 'vid') s += sep + (b.t === 'img' ? bt('pic', '📷', 'Replace picture') : bt('vlink', '✎ Link', 'Change the video link')) + '<input type="range" min="20" max="100" data-vw="w" value="' + (b.w || 100) + '" title="Width">' + pos(b.al || 'center');
       else if (b.t === 'h') s += sep + bt('lv2', 'H2', 'Big heading', b.l !== 3) + bt('lv3', 'H3', 'Small heading', b.l === 3);
+      else if (b.t === 'tbl') s += sep + bt('tb-ar', '＋Row', 'Add a row under the cell you clicked') + bt('tb-ac', '＋Col', 'Add a column after the cell you clicked') + bt('tb-dr', '−Row', 'Delete the row of the cell you clicked') + bt('tb-dc', '−Col', 'Delete the column of the cell you clicked') + bt('tb-hd', 'Header', 'First row is a header', b.head !== false);
       else if (b.t !== 'hr') {
         s += sep + [['', 'M'], ['sm', 'S'], ['lg', 'L'], ['xl', 'XL']].map(z => bt('sz-' + z[0], z[1], 'Text size', (b.sz || '') === z[0])).join('') + sep + '<input type="range" min="40" max="100" data-vw="bw" value="' + (b.bw || 100) + '" title="Box width">' + pos(b.bal || 'left');
         if (b.t === 'eq') s += sep + bt('eqc', '✎ Code', 'Edit the LaTeX code');
@@ -359,8 +390,9 @@
       else if (b.t === 'h') mk(w.querySelector('.ar-h'), 'x', true);
       else if (b.t === 'q') { mk(w.querySelector('.ar-q-t'), 'x'); mk(w.querySelector('.ar-q-by cite'), 'by', true); }
       else if (b.t === 'list') w.querySelectorAll('.ar-list li').forEach((li, k) => mk(li, 'li', false, k));
+      else if (b.t === 'tbl') w.querySelectorAll('.ar-tbl tr').forEach((tr, r) => tr.querySelectorAll('th,td').forEach((cl, c) => { mk(cl, 'cell'); cl.dataset.r = r; cl.dataset.c = c; }));
       else if (b.t === 'note') { mk(w.querySelector('.ar-note > div'), 'x'); mk(w.querySelector('.ar-note > b'), 'h', true); }
-      else if (b.t === 'img') mk(w.querySelector('figcaption'), 'c', true);
+      else if (b.t === 'img' || b.t === 'vid') mk(w.querySelector('figcaption'), 'c', true);
     }
     function redrawBlock(i) {
       const w = prevEl.querySelector('.ve-b[data-i="' + i + '"]'); if (!w) return;
@@ -384,12 +416,16 @@
     function syncVe(el) {
       const f = el.dataset.ve, val = unz(el.dataset.plain ? el.textContent : el.innerHTML), w = el.closest('.ve-b');
       if (f === 'title') p.title = val; else if (f === 'summary') p.summary = val;
-      else if (w) { const b = blocks[+w.dataset.i]; if (f === 'li') b.i[+el.dataset.k] = val; else b[f] = val; }
+      else if (w) { const b = blocks[+w.dataset.i]; if (f === 'li') b.i[+el.dataset.k] = val; else if (f === 'cell') b.rows[+el.dataset.r][+el.dataset.c] = val; else b[f] = val; }
       el.classList.toggle('ve-e', empty(el)); mark();
     }
     prevEl.addEventListener('input', e => {
       const t = e.target;
-      if (t.dataset && t.dataset.vw) { const w = t.closest('.ve-b'), i = +w.dataset.i; blocks[i][t.dataset.vw] = +t.value; mark(); redrawBlock(i); return; }
+      if (t.dataset && t.dataset.vw) {
+        const w = t.closest('.ve-b'), i = +w.dataset.i, b = blocks[i]; b[t.dataset.vw] = +t.value; mark();
+        if (b.t === 'img' || b.t === 'vid') { const fg = w.querySelector('.ar-fig'); if (fg) fg.style.setProperty('--w', t.value + '%'); } else redrawBlock(i);
+        return;
+      }
       const el = t.closest && t.closest('[data-ve]'); if (el) syncVe(el);
     });
     prevEl.addEventListener('paste', e => {
@@ -397,7 +433,10 @@
       e.preventDefault(); const cd = e.clipboardData, h = el.dataset.plain ? '' : cd.getData('text/html');
       if (h) document.execCommand('insertHTML', false, R.sanitize(h)); else document.execCommand('insertText', false, cd.getData('text/plain'));
     });
-    prevEl.addEventListener('focusin', e => { const w = e.target.closest && e.target.closest('.ve-b'); if (w) active = +w.dataset.i; });
+    prevEl.addEventListener('focusin', e => {
+      const t = e.target, w = t.closest && t.closest('.ve-b'); if (!w) return;
+      active = +w.dataset.i; if (t.dataset && t.dataset.ve === 'cell') lastCell = { i: active, r: +t.dataset.r, c: +t.dataset.c };
+    });
     prevEl.addEventListener('keydown', e => {
       const el = e.target.closest && e.target.closest('[data-ve]'); if (!el || e.key !== 'Enter' || e.shiftKey) return;
       e.preventDefault(); if (el.dataset.plain) return;
@@ -414,9 +453,15 @@
       else if (c === 'dup') { blocks.splice(i + 1, 0, clone(b)); active = i + 1; mark(); drawPage(); }
       else if (c === 'del') { blocks.splice(i, 1); active = -1; mark(); drawPage(); }
       else if (c.indexOf('sz-') === 0) { b.sz = c.slice(3); mark(); redrawBlock(i); refreshCtl(); }
-      else if (c.indexOf('pos-') === 0) { if (b.t === 'img') b.al = c.slice(4); else b.bal = c.slice(4); mark(); redrawBlock(i); refreshCtl(); }
+      else if (c.indexOf('pos-') === 0) {
+        const v = c.slice(4);
+        if (b.t === 'img' || b.t === 'vid') { b.al = v; const fg = w.querySelector('.ar-fig'); if (fg) fg.className = fg.className.replace(/fa-\w+/, 'fa-' + v); } else { b.bal = v; redrawBlock(i); }
+        mark(); refreshCtl();
+      }
       else if (c === 'lv2' || c === 'lv3') { b.l = c === 'lv3' ? 3 : 2; mark(); redrawBlock(i); refreshCtl(); }
+      else if (c.indexOf('tb-') === 0) { if (c === 'tb-hd') { b.head = b.head === false; mark(); redrawBlock(i); refreshCtl(); } else tableOp(b, c.slice(3), i); }
       else if (c === 'pic') pick(IMG, false, async fs => { const u = await upImg(fs[0]); if (u) { b.u = u; mark(); redrawBlock(i); } });
+      else if (c === 'vlink') { const v = await UI.prompt('Video link', 'Paste a YouTube or Vimeo link.', { value: b.u || '' }); if (v !== null) { b.u = v.trim(); mark(); redrawBlock(i); } }
       else if (c === 'eqc') { const v = await UI.prompt('Equation (LaTeX code)', 'Type or paste the code. Open Ω Symbol codes for help.', { value: b.x || '' }); if (v !== null) { b.x = v.trim(); mark(); redrawBlock(i); } }
     });
 
@@ -482,21 +527,3 @@
     const onUp = () => { drag = false; sched(); }, onScrl = () => { if (!bub.hidden) requestAnimationFrame(place); };
     function onKey(e) {
       const k = String(e.key).toLowerCase();
-      if ((e.ctrlKey || e.metaKey) && k === 's') { e.preventDefault(); save($('[data-act="save"]')); }
-      else if ((e.ctrlKey || e.metaKey) && k === 'k' && rtOf(document.activeElement)) { e.preventDefault(); remember(); addLink(); }
-    }
-    function shut() {
-      clearInterval(timer); cancelAnimationFrame(raf);
-      removeEventListener('beforeunload', guard); removeEventListener('resize', onScrl);
-      document.removeEventListener('selectionchange', sched); document.removeEventListener('mouseup', onUp); document.removeEventListener('keyup', sched); document.removeEventListener('keydown', onKey, true);
-      root.remove(); document.body.classList.remove('no-scroll');
-    }
-    addEventListener('beforeunload', guard); addEventListener('resize', onScrl);
-    document.addEventListener('selectionchange', sched); document.addEventListener('mouseup', onUp); document.addEventListener('keyup', sched); document.addEventListener('keydown', onKey, true);
-    $('.ae-body').addEventListener('scroll', onScrl);
-
-    drawBlocks(); drawSide(); if (!row.id) $('.ae-title').focus();
-  }
-
-  window.HoloArticleEditor = { open };
-})();
